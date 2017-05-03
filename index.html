@@ -1,0 +1,107 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Game Thing</title>
+  </head>
+  <body>
+ 
+  </body>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/hexi.js"></script>
+  <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+    <script>
+    var socket = io();
+    
+
+  
+  function mainLoop(){
+  
+    //ping();
+  
+  }
+
+  
+  //Dont need to load and files for now
+  thingsToLoad = [];
+  
+  //Syncs per sec
+  SYNC_RATE = 10;
+  
+  
+  
+  var g = hexi(512,512,setup);
+  g.fps = 60;
+  g.scaleToWindow();
+  g.backgroundColor = 0xFFFFFF;
+  g.start();
+  
+  var id = 0;
+  var testMsg;
+  var player;
+  var readyToSync = false;
+  var syncInfo = {x:0,y:0};
+  
+  function setup(){
+    console.log("Sup")
+    testMsg = g.text("TEST TEST TEST");
+    g.stage.putCenter(testMsg)
+    testMsg.setPivot(0.5,0.5);
+    player = g.rectangle(32, 32, "red");
+    
+    mainLevel = g.group();
+    socket.emit('join',"Isvan");
+    g.state = play;
+    
+  }
+  
+  function load(){
+  console.log("LOADING")
+ // testMsg.rotation += 0.1;
+  
+ 
+  }
+  
+  var frameCount = 0;
+  
+  function play(){
+  
+  frameCount++;
+  if(frameCount > SYNC_RATE){
+    frameCount = 0;
+    sync();
+  }
+  
+  if(readyToSync == true){
+  
+   player.x = syncInfo.x;
+   player.y = syncInfo.y;
+   //console.log("Synced")
+   readyToSync = false;
+  }
+  
+  testMsg.rotation += 0.1;
+  g.move(player);
+  
+  
+  }
+  
+   function sync(){
+   
+    socket.emit('sync', {x: player.x ,y : player.y });
+     //console.log("Send Synced")
+   }
+  
+   socket.on('sync', function(dat){
+      readyToSync = true
+      syncInfo.x = dat.x;
+      syncInfo.y = dat.y;
+      
+    });
+  
+  socket.on('join',function(data){
+       //Server will give us an ID untill we wait
+       id = data.id;
+  });
+  
+    </script>
+</html>

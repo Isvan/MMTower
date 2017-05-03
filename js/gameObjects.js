@@ -10,6 +10,15 @@ function Base(x,y,hp){
     
 }
 
+function Player(name,socket){
+    
+    this.name = name;
+    this.credits = 0;
+    //Id that we will send the to player so only they can acess their turrets and stuff
+    this.id = socket.id;
+    
+}
+
 Base.prototype = {
     
     takeDamg : function(amount){
@@ -30,9 +39,10 @@ Base.prototype = {
     
 }
 
-function Tower(x,y){
+function Tower(x,y,id){
     
     this.x = x;
     this.y = y;
     
+    this.ownerId = id;
 }

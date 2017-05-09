@@ -1,7 +1,8 @@
 function Base(x,y,hp){
     
     //So we can grab the position as one object
-    this.pos = {x,y};
+    this.x = x;
+    this.y = y;
     //Set hp
     this.maxHp = hp;
     this.curHp = hp;
@@ -27,7 +28,7 @@ Base.prototype = {
             this.isDead = true;
         }
     }
-    
+    ,
     heal : function(amount){
         this.curHp += amount;
         if(this.curHp > this.maxHp){

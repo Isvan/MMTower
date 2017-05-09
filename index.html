@@ -35,11 +35,8 @@
   g.backgroundColor = 0xFFFFFF;
   g.start();
   
-  var id = 0;
-  var testMsg;
-  var player;
-  var readyToSync = false;
-  var syncInfo = {x:0,y:0};
+  var id;
+
   
   function setup(){
     console.log("Sup")
@@ -65,42 +62,23 @@
   
   function play(){
   
-  frameCount++;
-  if(frameCount > SYNC_RATE){
-    frameCount = 0;
-    sync();
-  }
-  
-  if(readyToSync == true){
-  
-   player.x = syncInfo.x;
-   player.y = syncInfo.y;
-   //console.log("Synced")
-   readyToSync = false;
-  }
-  
-  testMsg.rotation += 0.1;
-  g.move(player);
-  
-  
-  }
-  
-   function sync(){
-   
-    socket.emit('sync', {x: player.x ,y : player.y });
-     //console.log("Send Synced")
-   }
-  
-   socket.on('sync', function(dat){
-      readyToSync = true
-      syncInfo.x = dat.x;
-      syncInfo.y = dat.y;
       
-    });
+        //This is the render Loop
   
+  }
+  
+   
   socket.on('join',function(data){
        //Server will give us an ID untill we wait
        id = data.id;
+       console.log("Got join data : " + id);
+  });
+  
+  
+  socket.on('disconnected', function() {
+
+        socket.emit('leave', id);
+
   });
   
     </script>

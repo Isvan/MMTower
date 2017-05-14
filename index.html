@@ -4,7 +4,10 @@
     <title>Game Thing</title>
   </head>
   <body>
- 
+  <div id="nameGet">
+   Enter your name : <input type="text" name="name" id="name">
+    <button onclick="initGame()">GO</button>
+  </div>
   </body>
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/hexi.js"></script>
@@ -23,47 +26,51 @@
   
   //Dont need to load and files for now
   thingsToLoad = [];
-  
+  var g;
   //Syncs per sec
   SYNC_RATE = 10;
   
-  
-  
-  var g = hexi(512,512,setup);
-  g.fps = 60;
-  g.scaleToWindow();
-  g.backgroundColor = 0xFFFFFF;
-  g.start();
-  
   var id;
-
+  var name;
   
   function setup(){
-    console.log("Sup")
-    testMsg = g.text("TEST TEST TEST");
+  
+    
+    testMsg = g.text("Hello : " + name);
     g.stage.putCenter(testMsg)
     testMsg.setPivot(0.5,0.5);
-    player = g.rectangle(32, 32, "red");
+   
     
     mainLevel = g.group();
-    socket.emit('join',"Isvan");
+    socket.emit('join',name);
     g.state = play;
     
   }
   
   function load(){
-  console.log("LOADING")
- // testMsg.rotation += 0.1;
+
   
  
   }
-  
-  var frameCount = 0;
+ 
   
   function play(){
-  
       
         //This is the render Loop
+  
+  }
+  
+  function initGame(){
+  
+  name = $('#name').val();
+  
+  $("#nameGet").remove();
+  
+  g = hexi(512,512,setup);
+  g.fps = 60;
+  g.scaleToWindow();
+  g.backgroundColor = 0xFFFFFF;
+  g.start();
   
   }
   

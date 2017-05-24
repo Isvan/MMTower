@@ -47,3 +47,27 @@ function Tower(x,y,id){
     
     this.ownerId = id;
 }
+
+function badGuy(x,y,hp,speed,damg){
+    
+    this.x = x;
+    this.y = y;
+    this.curHp = hp;
+    this.speed = speed;
+    this.damg = damg;
+    this.isDead = false;
+}
+
+badGuy.prototype = {
+    
+   takeDamg : function(amount){
+        this.curHp -= amount;
+        if(this.curHp <= 0){
+            this.isDead = true;
+        }
+   }
+   ,
+   
+    
+    
+}

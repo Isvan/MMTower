@@ -13,6 +13,13 @@ function Game(){
     this.base = new Base(50,50,100);
     this.kill = false;
     this.updateTimer = 0;
+    this.movementMap = genMovementMap(500,500,base,towers);
+}
+
+//http://www.redblobgames.com/pathfinding/tower-defense/
+//Following this guide to create a breath first search that then tells moving things how to get to the base
+//Each time a tower is added or removed this will need to be recalculated
+function genMovementMap(width,height,base,towers){
     
 }
 

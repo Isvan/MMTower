@@ -15,6 +15,8 @@ function include(f) {
 
 include('./js/gameObjects.js');
 include('./js/gameLogic.js');
+include('./js/misc.js');
+
 
 
 app.get('/', function(req, res){

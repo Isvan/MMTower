@@ -40,7 +40,9 @@ io.on("connection",function(socket){
         //Put the socket in a group
         socket.join(socket.id);
         //Then send a message only to that group
-        io.sockets.in(socket.id).emit('join', {id: socket.id});
+	
+		
+        io.sockets.in(socket.id).emit('join', {id: socket.id,test: g.movementMap});
         g.newPlayer(new Player(name,socket));
         console.log("Player " + name + " joined and was given id " + socket.id);
     });

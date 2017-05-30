@@ -32,17 +32,21 @@
   
   var id;
   var name;
-  
+  var camera;
+  var map;
+  var mapLoaded = false;
+  var mapCon;
   function setup(){
   
     
-    testMsg = g.text("Hello : " + name);
-    g.stage.putCenter(testMsg)
-    testMsg.setPivot(0.5,0.5);
+    camera = g.group();
    
-    
-    mainLevel = g.group();
     socket.emit('join',name);
+   
+   //Lets test to see if I can
+    mapCon = new PIXI.Container();
+    
+   
     g.state = play;
     
   }
@@ -57,7 +61,14 @@
   function play(){
       
         //This is the render Loop
-  
+        if(mapLoaded == false){
+            if(map != undefined){
+                loadMap();
+                mapLoaded = true;
+            }
+        
+        }
+        
   }
   
   function initGame(){
@@ -66,23 +77,58 @@
   
   $("#nameGet").remove();
   
-  g = hexi(512,512,setup);
+  g = hexi($(window).width(),$(window).height(),setup);
   g.fps = 60;
   g.scaleToWindow();
   g.backgroundColor = 0xFFFFFF;
   g.start();
   
   }
+ 
+  function loadMap(){
   
+    mapCon.removeChildren();
+  
+    for(var i = 0;i < map.length;i++){
+        for(var k = 0;k < map[i].length;k++){
+        
+            mapCon.addChild(g.rectangle(50 , 50, "white","black",5,i*50,k*50));
+            var text = g.text("" + map[i][k].extra);
+            text.x = i*50 + 5;
+            text.y = k*50 + 20;
+            mapCon.addChild(text);
+            var line = g.line();
+            line.ax = i*50 + 25;
+            line.ay = k*50 + 25;
+            line.bx = map[i][k].x * 50 + 25;
+            line.by = map[i][k].y * 50 + 25;
+            
+            //var line = g.line(i*50 + 25,k*50 + 25,map[i][k].x * 50 + 20,map[i][k].y * 50 + 20);
+            mapCon.addChild(line);
+            
+        
+        }
+    }
+    camera.addChild(mapCon);
+    }
    
   socket.on('join',function(data){
        //Server will give us an ID untill we wait
        id = data.id;
-       console.log("Got join data : " + id);
-	   console.log("Movement Map! :" + JSON.stringify(data.test, null, 4));
-	   
+      // console.log("Got join data : " + id);
+	  // console.log("Movement Map! :" + JSON.stringify(data.test, null, 4));
+	   map = data.test;
   });
-  
+ 
+ socket.on('mapUpdate',function(data){
+     
+     console.log("Updating map!");
+     map = data.map;
+     mapLoaded = false;
+     
+     
+ });
+
   
   socket.on('disconnected', function() {
 

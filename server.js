@@ -66,4 +66,23 @@ http.listen(3000, function(){
 
 g = new Game();
 
+//setInterval(updateMap, 60000);
+
+function updateMap( )
+{
+    
+  if(g != undefined){
+        g.base.x += 1;
+        if(g.base.x >= g.mapWidth){
+            g.base.x = 0;
+            g.base.y += 1;
+            
+            if(g.base.y >= g.mapHeight){
+                g.base.y = 0;
+            }
+            
+        }
+        io.emit("mapUpdate",{map:genMovementMap(g.mapWidth,g.mapHeight,g.base,g.towers)})
+  }
+}
 

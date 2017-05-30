@@ -10,23 +10,28 @@ function Game(){
    
     this.players = [];
     this.towers = [];
-    this.base = new Base(5,5,100);
+    this.base = new Base(6,6,100);
     this.kill = false;
     this.updateTimer = 0;
-    this.movementMap = genMovementMap(10,10,this.base,this.towers);
+    this.movementMap = genMovementMap(11,11,this.base,this.towers);
+    this.mapWidth = 11;
+    this.mapHeight = 11;
 }
+
 
 //http://www.redblobgames.com/pathfinding/tower-defense/
 //Following this guide to create a breath first search that then tells moving things how to get to the base
 //Each time a tower is added or removed this will need to be recalculated
 function genMovementMap(width,height,base,towers){
     //Create an arrat that we will use as a queue
+    var count = 0;
 	var queue = [];
 	
 	//This is a multi-dim array that holds vectors, each vector tells any
 	//Moving object which tile to go to next to get to the base
 	var movementMap = createMultiDimArr(width,height,true);
-	
+
+    movementMap[base.x][base.y] = new Vector2D(base.x,base.y);
 	//This is our destination
 	queue.push(new Vector2D(base.x,base.y));
 
@@ -34,28 +39,37 @@ function genMovementMap(width,height,base,towers){
 	//Grab next value in the queue
 		var current = queue.shift();
 		
+        movementMap[current.x][current.y].extra = count;
+                count += 1;
+        
+        //CURRENT ISSUE, MARKS VISITED WHEN SOMETHING IS GOING TO BE VISITED THIS CREATES LINES AND NOTE PROPER DIAGONALS
+        
+        
 		//Look at neightbors and queue any that are valid
 		for(var xRel = -1;xRel <= 1 ;xRel ++){
 			for(var yRel = -1;yRel <= 1;yRel ++){
 				
-				//Make sure we dont check outselfs
-				if(xRel == 0 && yRel == 0){
-					continue;
-				}
+				//Make sure we dont check outselfs or corners for now
+				if(xRel == 0 && yRel == 0 || xRel == 1 && yRel == 1 || xRel == -1 && yRel == 1 || xRel == 1 && yRel == -1 || xRel == -1 && yRel == -1 ){
+					//continue;
+				}else{
+                     if(checkValidSpot(current.x + xRel,current.y + yRel,towers,movementMap,width,height)){
+				
+                        //Valid spot add to queue
+                        queue.push(new Vector2D(current.x + xRel,current.y + yRel));
+                        //Update movementMaps
+                        movementMap[current.x + xRel][current.y + yRel] = new Vector2D(current.x,current.y);
+                
+               
+                    }
+			
+                }
 			
 			//Check if valid spot is valid
-			 if(checkValidSpot(current.x + xRel,current.y + yRel,towers,movementMap,width,height)){
-				
-				//Valid spot add to queue
-				queue.push(new Vector2D(current.x + xRel,current.y + yRel));
-				//Update movementMaps
-				movementMap[current.x + xRel][current.y + yRel] = new Vector2D(current.x,current.y);
-			 }
 			
 			
 			}
-		}
-		
+		}       
 		//Take first value from queue
 	}
 	

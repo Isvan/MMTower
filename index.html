@@ -34,6 +34,8 @@
   var name;
   var camera;
   var map;
+  var towers;
+  var base;
   var mapLoaded = false;
   var mapCon;
   function setup(){
@@ -73,42 +75,109 @@
   
   function initGame(){
   
-  name = $('#name').val();
+	name = $('#name').val();
   
-  $("#nameGet").remove();
+	$("#nameGet").remove();
   
-  g = hexi($(window).width(),$(window).height(),setup);
-  g.fps = 60;
-  g.scaleToWindow();
-  g.backgroundColor = 0xFFFFFF;
+	g = hexi($(window).width(),$(window).height(),setup);
+	g.fps = 60;
+	g.scaleToWindow();
+	g.backgroundColor = 0xFFFFFF;
+  
+	g.pointer.press = function () {
+		//console.log("The pointer was pressed");
+	};
+
+	//Add a custom `release` method
+	g.pointer.release = function () {
+		//console.log("The pointer was released");
+	};
+
+	//Add a custom `tap` method
+	g.pointer.tap = function () {
+    
+		for(var i =0;i < mapCon.children.length;i++){
+    
+			if(g.hit(g.pointer,mapCon.getChildAt(i))){
+        
+				mapCon.getChildAt(i).tint = 18777215;
+				var data = {};
+				data.id = id;
+				data.x = Math.floor(g.pointer.x/50);
+				data.y = Math.floor(g.pointer.y/50);
+				socket.emit('turret', data);
+            
+            //console.log("Esitmated pos : " + Math.floor(g.pointer.x/50) + " " + Math.floor(g.pointer.y/50));
+			break;
+			}
+		}
+    
+	};
+  
+  
   g.start();
   
-  }
+}
  
   function loadMap(){
   
     mapCon.removeChildren();
   
+    lines = [];
+	var line;
+  
     for(var i = 0;i < map.length;i++){
         for(var k = 0;k < map[i].length;k++){
         
+        if(map[i][k] == null){
+				//There is nothing here, meaning the path cant reach it
+                 mapCon.addChild(g.rectangle(50 , 50, "white","grey",5,i*50,k*50));
+           
+        
+        }else{
+			//Path can reach this location so draw like normal
             mapCon.addChild(g.rectangle(50 , 50, "white","black",5,i*50,k*50));
-            var text = g.text("" + map[i][k].extra);
-            text.x = i*50 + 5;
-            text.y = k*50 + 20;
-            mapCon.addChild(text);
-            var line = g.line();
+            
+			
+            if(map[i][k].distance != null && false){
+                var text = g.text("" + map[i][k].distance);
+                text.x = i*50 + 5;
+                text.y = k*50 + 20;
+                mapCon.addChild(text);
+            }
+            
+            line = g.line();
             line.ax = i*50 + 25;
             line.ay = k*50 + 25;
             line.bx = map[i][k].x * 50 + 25;
             line.by = map[i][k].y * 50 + 25;
             
             //var line = g.line(i*50 + 25,k*50 + 25,map[i][k].x * 50 + 20,map[i][k].y * 50 + 20);
-            mapCon.addChild(line);
-            
+            //mapCon.addChild(line);
+            lines.push(line);
+        }
         
         }
     }
+    
+    
+    for(var i = 0;i < lines.length;i++){
+    
+        mapCon.addChild(lines[i]);
+    
+    }
+    
+	for(var i = 0;i < towers.length;i++){
+	
+		mapCon.addChild(g.rectangle(50 , 50, "red","grey",5,towers[i].x*50,towers[i].y*50));
+	
+	}
+	
+	if(base != null){
+		mapCon.addChild(g.rectangle(50 , 50, "green","grey",5,base.x*50,base.y*50));
+	}
+	
+	
     camera.addChild(mapCon);
     }
    
@@ -117,16 +186,18 @@
        id = data.id;
       // console.log("Got join data : " + id);
 	  // console.log("Movement Map! :" + JSON.stringify(data.test, null, 4));
-	   map = data.test;
+	   map = data.map;
+       towers = data.towers;
   });
  
  socket.on('mapUpdate',function(data){
      
-     console.log("Updating map!");
+     ///console.log("Updating map!");
      map = data.map;
      mapLoaded = false;
      
-     
+     towers = data.towers;
+     base = data.base;
  });
 
   

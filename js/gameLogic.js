@@ -13,9 +13,9 @@ function Game(){
     this.base = new Base(6,6,100);
     this.kill = false;
     this.updateTimer = 0;
-    this.movementMap = genMovementMap(11,11,this.base,this.towers);
-    this.mapWidth = 11;
-    this.mapHeight = 11;
+    this.movementMap = genMovementMap(10,10,this.base,this.towers);
+    this.mapWidth = 10;
+    this.mapHeight = 10;
 }
 
 
@@ -39,18 +39,19 @@ function genMovementMap(width,height,base,towers){
 	//Grab next value in the queue
 		var current = queue.shift();
 		
-        movementMap[current.x][current.y].extra = count;
-                count += 1;
+        //movementMap[current.x][current.y].extra = count;
+        //        count += 1;
         
-        //CURRENT ISSUE, MARKS VISITED WHEN SOMETHING IS GOING TO BE VISITED THIS CREATES LINES AND NOTE PROPER DIAGONALS
         
         
 		//Look at neightbors and queue any that are valid
 		for(var xRel = -1;xRel <= 1 ;xRel ++){
 			for(var yRel = -1;yRel <= 1;yRel ++){
 				
+                //if(xRel == 0 && yRel == 0 || xRel == 1 && yRel == 1 || xRel == -1 && yRel == 1 || xRel == 1 && yRel == -1 || xRel == -1 && yRel == -1 ){
+				
 				//Make sure we dont check outselfs or corners for now
-				if(xRel == 0 && yRel == 0 || xRel == 1 && yRel == 1 || xRel == -1 && yRel == 1 || xRel == 1 && yRel == -1 || xRel == -1 && yRel == -1 ){
+				if(xRel == 0 && yRel == 0){
 					//continue;
 				}else{
                      if(checkValidSpot(current.x + xRel,current.y + yRel,towers,movementMap,width,height)){
@@ -59,13 +60,12 @@ function genMovementMap(width,height,base,towers){
                         queue.push(new Vector2D(current.x + xRel,current.y + yRel));
                         //Update movementMaps
                         movementMap[current.x + xRel][current.y + yRel] = new Vector2D(current.x,current.y);
-                
-               
+                     
                     }
 			
                 }
 			
-			//Check if valid spot is valid
+			
 			
 			
 			}
@@ -99,6 +99,7 @@ function checkValidSpot(x,y,towers,movementMap,width,height){
 	return true;
 }
 
+
 Game.prototype = {
     
     init : function(){
@@ -124,12 +125,37 @@ Game.prototype = {
         updateTimer++;
     }
     ,
-    newTower : function(id,tower){
-        
+    newTower : function(id,x,y){
+        this.towers.push(new Vector2D(x,y));
         
         
     }
     ,
+     toggleTower : function(id,x,y){
+        
+        for(var i=0;i < this.towers.length;i++){
+            
+            if(this.towers[i].x == x && this.towers[i].y == y){
+                
+                this.towers.splice(i,1);
+                return;
+                
+            }
+            
+        }
+        this.towers.push(new Vector2D(x,y));
+        
+        
+    }
+    ,
+    removeTower : function(id,index){
+        
+                this.towers.splice(index,1);
+             
+        
+    }
+    ,
+    
     newPlayer : function(player){
         //Add a new player to the players array
         this.players.push(player);

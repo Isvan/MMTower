@@ -42,10 +42,18 @@ io.on("connection",function(socket){
         //Then send a message only to that group
 	
 		
-        io.sockets.in(socket.id).emit('join', {id: socket.id,test: g.movementMap});
+        io.sockets.in(socket.id).emit('join', {id: socket.id,map: g.movementMap,towers:g.towers});
         g.newPlayer(new Player(name,socket));
         console.log("Player " + name + " joined and was given id " + socket.id);
     });
+  
+  socket.on('turret',function(data){
+      //Has 3 things, id , x and y pos
+      
+       g.toggleTower(data.id,data.x,data.y);
+      
+      sendMapData();
+  });
   
   socket.on('sync',function(data){
       socket.broadcast.emit('sync',data);
@@ -66,7 +74,13 @@ http.listen(3000, function(){
 
 g = new Game();
 
-//setInterval(updateMap, 60000);
+function sendMapData(){
+    
+    io.emit("mapUpdate",{map:genMovementMap(g.mapWidth,g.mapHeight,g.base,g.towers),towers:g.towers,base:g.base})
+    
+}
+
+setInterval(updateMap, 5000);
 
 function updateMap( )
 {
@@ -82,7 +96,7 @@ function updateMap( )
             }
             
         }
-        io.emit("mapUpdate",{map:genMovementMap(g.mapWidth,g.mapHeight,g.base,g.towers)})
+        sendMapData();
   }
 }
 

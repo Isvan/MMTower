@@ -104,25 +104,23 @@ Game.prototype = {
     
     init : function(){
         
-        setInterval(this.update(),TICKRATE)
+       
     }
     ,
     update : function(){
-        
         //This will update everything and send out sync messages
         if(this.kill){
-            clearInterval();
+          //  clearInterval();
         }
         //Update server side info
         
-        
-        if(updateTimer == UPDATE_RATIO){
+        //Use this so the server tick rate can be 60/s but data is only sent 30/s or less depending on update ratio 
+        if(this.updateTimer == UPDATE_RATIO){
          //io.sockets.emit('users_count', clients);
-        
-           updateTimer = 0;
+           this.updateTimer = 0;
         }
         
-        updateTimer++;
+        this.updateTimer++;
     }
     ,
     newTower : function(id,x,y){

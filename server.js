@@ -80,7 +80,11 @@ function sendMapData(){
     
 }
 
-//setInterval(updateMap, 5000);
+g.init();
+
+//How to make the interval to work because javascript :/
+setInterval(function(){g.update()}, TICKRATE);
+
 
 function updateMap( )
 {

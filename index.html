@@ -80,6 +80,10 @@
                 mapLoaded = true;
             }
         
+        }else{
+        
+            panMap();
+        
         }
         
         if(mapCon.children.length == 0){
@@ -129,8 +133,10 @@
 				
 				var data = {};
 				data.id = id;
-				data.x = Math.floor((g.pointer.x/camera.scaleX)/gridSize);
-				data.y = Math.floor((g.pointer.y/camera.scaleY)/gridSize);
+                //Division is correct for zoom
+                //Sub is to corect for panning
+				data.x = Math.floor(((g.pointer.x-camera.x)/camera.scaleX)/gridSize);
+				data.y = Math.floor(((g.pointer.y-camera.y)/camera.scaleY)/gridSize);
 				socket.emit('turret', data);
             
             //console.log("Esitmated pos : " + Math.floor(g.pointer.x/gridSize) + " " + Math.floor(g.pointer.y/gridSize));
@@ -178,6 +184,61 @@
     return false;
     }
  
+    function panMap(){
+
+        var buffer = 100;
+        var triggerRange = 100;
+        var panSpeed = 7
+        
+       
+        if(camera.y < camera.height - camera.height/2){
+            //Can move the camera down
+            if(g.pointer.y < triggerRange){
+                //Mouse is on the top side of the screen
+               
+                    camera.y += panSpeed 
+                
+            }
+            
+        
+        }else{
+            console.log("BOUND HIT at " + camera.y );
+        }
+
+        if(-1 * camera.y < camera.height - camera.height/2){
+            //Can move the camera up
+            if(window.innerHeight - g.pointer.y < triggerRange){
+                //Mouse is on the bottom edge of the screen
+               
+                    camera.y -= panSpeed;
+                
+            }
+        }
+    
+        if(camera.x < camera.width - camera.width/2){
+            //Can move the camera down
+            if(g.pointer.x < triggerRange){
+                //Mouse is on the top side of the screen
+               
+                    camera.x += panSpeed 
+                
+            }
+            
+        
+        }
+
+        if(-1 * camera.x < camera.width - camera.width/2){
+            //Can move the camera up
+            if(window.innerWidth - g.pointer.x < triggerRange){
+                //Mouse is on the bottom edge of the screen
+               
+                    camera.x -= panSpeed;
+                
+            }
+        }
+    
+    
+    }
  
     function MouseWheelHandler(e)
     {
@@ -186,11 +247,16 @@
     var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
     //Shamelessly stolen from stack overflow 
     
-    var damper = 10;
+    var damper = 20;
     
     camera.scaleX = camera.scaleX + delta/damper;
     camera.scaleY = camera.scaleY + delta/damper;
     
+    //Bound the zoom
+    if(camera.scaleX < 0.1){
+        camera.scaleX = 0.1;
+        camera.scaleY = 0.1;
+    }
     
     return false;
 }

@@ -41,8 +41,8 @@ io.on("connection",function(socket){
         socket.join(socket.id);
         //Then send a message only to that group
 	
-		
-        io.sockets.in(socket.id).emit('join', {id: socket.id,map: g.movementMap,towers:g.towers});
+        //Send init info which is there id, and the current map status
+        io.sockets.in(socket.id).emit('join', {id: socket.id,map:genMovementMap(g.mapWidth,g.mapHeight,g.base,g.towers),towers:g.towers,base:g.base,mapWidth : g.mapWidth,mapHeight : g.mapHeight});
         g.newPlayer(new Player(name,socket));
         console.log("Player " + name + " joined and was given id " + socket.id);
     });
@@ -80,7 +80,7 @@ function sendMapData(){
     
 }
 
-setInterval(updateMap, 5000);
+//setInterval(updateMap, 5000);
 
 function updateMap( )
 {

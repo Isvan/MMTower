@@ -6,6 +6,8 @@
   <body>
   <div id="nameGet">
    Enter your name : <input type="text" name="name" id="name">
+  
+   
     <button onclick="initGame()">GO</button>
   </div>
   </body>
@@ -30,6 +32,8 @@
   //Syncs per sec
   SYNC_RATE = 10;
   
+  var mapWidth;
+  var mapHeight;
   var id;
   var name;
   var camera;
@@ -38,6 +42,9 @@
   var base;
   var mapLoaded = false;
   var mapCon;
+  var linesCon;
+  var towersCon;
+  var gridSize;
   function setup(){
   
     
@@ -47,8 +54,12 @@
    
    //Lets test to see if I can
     mapCon = new PIXI.Container();
-    
+	linesCon = new PIXI.Container();
+	towersCon = new PIXI.Container();
    
+   
+   
+   loadMap();
     g.state = play;
     
   }
@@ -65,52 +76,77 @@
         //This is the render Loop
         if(mapLoaded == false){
             if(map != undefined){
-                loadMap();
+                reloadMap();
                 mapLoaded = true;
             }
         
         }
         
+        if(mapCon.children.length == 0){
+        
+            drawMapBackGround();
+        
+        }
   }
   
   function initGame(){
   
 	name = $('#name').val();
-  
+	
+    gridSize = 40;
+    
+    
 	$("#nameGet").remove();
+    //$("#grid").remove();
+    
   
 	g = hexi($(window).width(),$(window).height(),setup);
 	g.fps = 60;
 	g.scaleToWindow();
 	g.backgroundColor = 0xFFFFFF;
   
+    var myitem = g.canvas;
+    if (myitem.addEventListener)
+    {
+        // IE9, Chrome, Safari, Opera
+        myitem.addEventListener("mousewheel", MouseWheelHandler, false);
+        // Firefox
+        myitem.addEventListener("DOMMouseScroll", MouseWheelHandler, false);
+    }else{
+        //Old IE Support not sure if it should relly be here
+        myitem.attachEvent("onmousewheel", MouseWheelHandler);
+    }
+
+  
 	g.pointer.press = function () {
 		//console.log("The pointer was pressed");
+		//for(var i =0;i < mapCon.children.length;i++){
+    
+			//if(isHitByMouse(mapCon.getChildAt(i))){
+			if(g.hit(g.pointer,camera)){
+        
+        
+				
+				var data = {};
+				data.id = id;
+				data.x = Math.floor((g.pointer.x/camera.scaleX)/gridSize);
+				data.y = Math.floor((g.pointer.y/camera.scaleY)/gridSize);
+				socket.emit('turret', data);
+            
+            //console.log("Esitmated pos : " + Math.floor(g.pointer.x/gridSize) + " " + Math.floor(g.pointer.y/gridSize));
+			//break;
+			}
+		//}
 	};
 
 	//Add a custom `release` method
 	g.pointer.release = function () {
 		//console.log("The pointer was released");
+		
 	};
 
 	//Add a custom `tap` method
 	g.pointer.tap = function () {
-    
-		for(var i =0;i < mapCon.children.length;i++){
-    
-			if(g.hit(g.pointer,mapCon.getChildAt(i))){
-        
-				mapCon.getChildAt(i).tint = 18777215;
-				var data = {};
-				data.id = id;
-				data.x = Math.floor(g.pointer.x/50);
-				data.y = Math.floor(g.pointer.y/50);
-				socket.emit('turret', data);
-            
-            //console.log("Esitmated pos : " + Math.floor(g.pointer.x/50) + " " + Math.floor(g.pointer.y/50));
-			break;
-			}
-		}
     
 	};
   
@@ -119,75 +155,148 @@
   
 }
  
-  function loadMap(){
-  
-    mapCon.removeChildren();
-  
-    lines = [];
-	var line;
-  
-    for(var i = 0;i < map.length;i++){
-        for(var k = 0;k < map[i].length;k++){
+    function isHitByMouse(child){
+    
+        //Scaled child measurements 
+        childScaledWidth = child.width * camera.scaleX;
+        childScaledXPos = child.x * camera.scaleX;
+        childScaledYPos = child.y * camera.scaleY;
+       
+        mouseX = g.pointer.x
+        mouseY = g.pointer.y
+            
+        //Do point vs rect collision
         
-        if(map[i][k] == null){
-				//There is nothing here, meaning the path cant reach it
-                 mapCon.addChild(g.rectangle(50 , 50, "white","grey",5,i*50,k*50));
+        //X Bounds
+        if(mouseX < childScaledXPos + childScaledWidth && mouseX > childScaledXPos){
+            //Y Bounds
+                if(mouseY < childScaledYPos + childScaledWidth && mouseY > childScaledYPos){
+                return true;
+                }
+        }
+    
+    return false;
+    }
+ 
+ 
+    function MouseWheelHandler(e)
+    {
+    // cross-browser wheel delta
+    var e = window.event || e; // old IE support
+    var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
+    //Shamelessly stolen from stack overflow 
+    
+    var damper = 10;
+    
+    camera.scaleX = camera.scaleX + delta/damper;
+    camera.scaleY = camera.scaleY + delta/damper;
+    
+    
+    return false;
+}
+ 
+	function drawMapBackGround(){
+		mapCon.removeChildren();
+		for(var i = 0;i < mapWidth;i++){
+		
+			for(var k = 0;k < mapHeight;k++){
+                //console.log("Creating child with dims : " + gridSize + " at pos " + (i*gridSize) + " , " + (k*gridSize));
+ 				mapCon.addChild(g.rectangle(gridSize , gridSize, "white","black",5,i*gridSize,k*gridSize));
+			}
+		
+		}
+	
+	}
+ 
+	function drawMapLines(){
+	
+		if(map == undefined){
+		return;
+		}
+	
+		linesCon.removeChildren();
+    
+		var line;
+
+		
+		
+		for(var i = 0;i < map.length;i++){
+			for(var k = 0;k < map[i].length;k++){
+        
+				if(map[i][k] == null){
+					//There is nothing here, meaning the path cant reach it
+					//mapCon.addChild(g.rectangle(50 , 50, "white","grey",5,i*50,k*50));
            
         
-        }else{
-			//Path can reach this location so draw like normal
-            mapCon.addChild(g.rectangle(50 , 50, "white","black",5,i*50,k*50));
+				}else{
+					//Path can reach this location so draw like normal
+				
+					line = g.line();
+					line.ax = i*gridSize + gridSize/2;
+					line.ay = k*gridSize + gridSize/2;
+					line.bx = map[i][k].x * gridSize + gridSize/2;
+					line.by = map[i][k].y * gridSize + gridSize/2;
             
-			
-            if(map[i][k].distance != null && false){
-                var text = g.text("" + map[i][k].distance);
-                text.x = i*50 + 5;
-                text.y = k*50 + 20;
-                mapCon.addChild(text);
-            }
-            
-            line = g.line();
-            line.ax = i*50 + 25;
-            line.ay = k*50 + 25;
-            line.bx = map[i][k].x * 50 + 25;
-            line.by = map[i][k].y * 50 + 25;
-            
-            //var line = g.line(i*50 + 25,k*50 + 25,map[i][k].x * 50 + 20,map[i][k].y * 50 + 20);
-            //mapCon.addChild(line);
-            lines.push(line);
-        }
+					linesCon.addChild(line);
+				}
         
-        }
-    }
-    
-    
-    for(var i = 0;i < lines.length;i++){
-    
-        mapCon.addChild(lines[i]);
-    
-    }
-    
-	for(var i = 0;i < towers.length;i++){
-	
-		mapCon.addChild(g.rectangle(50 , 50, "red","grey",5,towers[i].x*50,towers[i].y*50));
+			}
+		}
 	
 	}
 	
-	if(base != null){
-		mapCon.addChild(g.rectangle(50 , 50, "green","grey",5,base.x*50,base.y*50));
+	function drawMapEtc(){
+	
+	if(map == undefined){
+		return;
 	}
 	
+	towersCon.removeChildren();
 	
-    camera.addChild(mapCon);
-    }
+		for(var i = 0;i < towers.length;i++){
+	
+			towersCon.addChild(g.rectangle(gridSize , gridSize, "red","grey",5,towers[i].x*gridSize,towers[i].y*gridSize));
+	
+		}
+	
+		if(base != null){
+			towersCon.addChild(g.rectangle(gridSize , gridSize, "green","grey",5,base.x*gridSize,base.y*gridSize));
+		}
+	
+	}
+  function reloadMap(){
+  
+	drawMapLines();
+	drawMapEtc();
+	
+  }
+   
+  function loadMap(){
+
+	camera.removeChildren();
+	
+	drawMapBackGround();
+	drawMapLines();
+	drawMapEtc();
+	
+    camera.addChild(mapCon)
+	camera.addChild(linesCon);
+	camera.addChild(towersCon);
+	
+	
+	}  
    
   socket.on('join',function(data){
-       //Server will give us an ID untill we wait
+       //Server will give us an ID until we wait
        id = data.id;
       // console.log("Got join data : " + id);
 	  // console.log("Movement Map! :" + JSON.stringify(data.test, null, 4));
 	   map = data.map;
        towers = data.towers;
+	   mapWidth = data.mapWidth;
+	   mapHeight = data.mapHeight;
+       console.log("Connected with server!");
+       mapLoaded = false;
   });
  
  socket.on('mapUpdate',function(data){

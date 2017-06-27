@@ -13,9 +13,9 @@ function Game(){
     this.base = new Base(6,6,100);
     this.kill = false;
     this.updateTimer = 0;
-    this.movementMap = genMovementMap(10,10,this.base,this.towers);
-    this.mapWidth = 10;
-    this.mapHeight = 10;
+    this.movementMap = genMovementMap(20,20,this.base,this.towers);
+    this.mapWidth = 20;
+    this.mapHeight = 20;
 }
 
 

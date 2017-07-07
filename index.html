@@ -34,13 +34,17 @@
   
   var mapWidth;
   var mapHeight;
+  var mapWidthPixels = 0;
+  var mapHeightPixels = 0;
   var id;
   var name;
   var camera;
   var map;
   var towers;
+  var badGuys;
   var base;
   var mapLoaded = false;
+  var badGuysCon;
   var mapCon;
   var linesCon;
   var towersCon;
@@ -56,7 +60,7 @@
     mapCon = new PIXI.Container();
 	linesCon = new PIXI.Container();
 	towersCon = new PIXI.Container();
-   
+   badGuysCon = new PIXI.Container();
    
    
    loadMap();
@@ -83,6 +87,7 @@
         }else{
         
             panMap();
+            drawBadGuys();
         
         }
         
@@ -123,14 +128,9 @@
 
   
 	g.pointer.press = function () {
-		//console.log("The pointer was pressed");
-		//for(var i =0;i < mapCon.children.length;i++){
-    
-			//if(isHitByMouse(mapCon.getChildAt(i))){
-			if(g.hit(g.pointer,camera)){
-        
-        
-				
+
+			if(pointHitMap(g.pointer)){
+        		
 				var data = {};
 				data.id = id;
                 //Division is correct for zoom
@@ -138,9 +138,8 @@
 				data.x = Math.floor(((g.pointer.x-camera.x)/camera.scaleX)/gridSize);
 				data.y = Math.floor(((g.pointer.y-camera.y)/camera.scaleY)/gridSize);
 				socket.emit('turret', data);
-            
-            //console.log("Esitmated pos : " + Math.floor(g.pointer.x/gridSize) + " " + Math.floor(g.pointer.y/gridSize));
-			//break;
+                 
+           
 			}
 		//}
 	};
@@ -161,27 +160,30 @@
   
 }
  
-    function isHitByMouse(child){
-    
-        //Scaled child measurements 
-        childScaledWidth = child.width * camera.scaleX;
-        childScaledXPos = child.x * camera.scaleX;
-        childScaledYPos = child.y * camera.scaleY;
-       
-        mouseX = g.pointer.x
-        mouseY = g.pointer.y
-            
-        //Do point vs rect collision
+    function pointHitMap(point){
+    //The camera looses its width and height properties for some reason,
+    //but they are based of the mapCon width and height so steal those
+    //but cant just use mapCon for everything as it does not get panned and zoomed
+        leftPoint = camera.x;
+        rightPoint = mapWidthPixels * camera.scaleX + camera.x;
         
-        //X Bounds
-        if(mouseX < childScaledXPos + childScaledWidth && mouseX > childScaledXPos){
-            //Y Bounds
-                if(mouseY < childScaledYPos + childScaledWidth && mouseY > childScaledYPos){
+        bottomPoint = camera.y;
+        topPoint = mapHeightPixels * camera.scaleY + camera.y;
+        
+        //Check x
+        if(point.x > leftPoint && point.x < rightPoint){
+           
+            if(point.y > bottomPoint && point.y < topPoint){
                 return true;
-                }
+            
+            }
+        
         }
     
+        
+    
     return false;
+    
     }
  
     function panMap(){
@@ -191,7 +193,7 @@
         var panSpeed = 7
         
        
-        if(camera.y < camera.height - camera.height/2){
+        if(camera.y < mapHeightPixels - mapHeightPixels/2){
             //Can move the camera down
             if(g.pointer.y < triggerRange){
                 //Mouse is on the top side of the screen
@@ -200,34 +202,27 @@
                 
             }
             
-        
         }else{
-            console.log("BOUND HIT at " + camera.y );
+            //console.log("BOUND HIT at " + camera.y );
         }
 
-        if(-1 * camera.y < camera.height - camera.height/2){
+        if(-1 * camera.y < mapHeightPixels - mapHeightPixels/2){
             //Can move the camera up
             if(window.innerHeight - g.pointer.y < triggerRange){
                 //Mouse is on the bottom edge of the screen
-               
-                    camera.y -= panSpeed;
-                
+                  camera.y -= panSpeed;
             }
         }
     
-        if(camera.x < camera.width - camera.width/2){
+        if(camera.x < mapWidthPixels - mapWidthPixels/2){
             //Can move the camera down
             if(g.pointer.x < triggerRange){
                 //Mouse is on the top side of the screen
-               
                     camera.x += panSpeed 
-                
             }
-            
-        
         }
 
-        if(-1 * camera.x < camera.width - camera.width/2){
+        if(-1 * camera.x < mapWidthPixels - mapWidthPixels/2){
             //Can move the camera up
             if(window.innerWidth - g.pointer.x < triggerRange){
                 //Mouse is on the bottom edge of the screen
@@ -271,13 +266,21 @@
 			}
 		
 		}
-	
+        
+        if(mapWidthPixels == 0 || mapHeightPixels == 0){
+            
+            mapWidthPixels = mapCon.width;
+            mapHeightPixels = mapCon.height;
+            
+        }
+    
+    
 	}
  
 	function drawMapLines(){
 	
 		if(map == undefined){
-		return;
+            return;
 		}
 	
 		linesCon.removeChildren();
@@ -310,6 +313,17 @@
 		}
 	
 	}
+
+    function drawBadGuys(){
+        badGuysCon.removeChildren();
+        for(var i = 0;i < badGuys.length;i++){
+        
+            
+            badGuysCon.addChild(g.rectangle(gridSize / 2 , gridSize / 2, "rose","black",2,badGuys[i].pos.x*gridSize,badGuys[i].pos.y*gridSize));
+        
+        }
+    
+    }
 	
 	function drawMapEtc(){
 	
@@ -348,7 +362,7 @@
     camera.addChild(mapCon)
 	camera.addChild(linesCon);
 	camera.addChild(towersCon);
-	
+	camera.addChild(badGuysCon);
 	
 	}  
    
@@ -367,14 +381,19 @@
  
  socket.on('mapUpdate',function(data){
      
-     ///console.log("Updating map!");
      map = data.map;
-     mapLoaded = false;
-     
      towers = data.towers;
      base = data.base;
+     mapLoaded = false;
  });
 
+ socket.on('tick',function(data){
+    
+     badGuys = data.badGuys;
+ });
+
+ 
+ 
   
   socket.on('disconnected', function() {
 

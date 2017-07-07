@@ -49,10 +49,10 @@ io.on("connection",function(socket){
   
   socket.on('turret',function(data){
       //Has 3 things, id , x and y pos
-      
+       
        g.toggleTower(data.id,data.x,data.y);
       
-      sendMapData();
+        sendMapData();
   });
   
   socket.on('sync',function(data){
@@ -83,7 +83,7 @@ function sendMapData(){
 g.init();
 
 //How to make the interval to work because javascript :/
-setInterval(function(){g.update()}, TICKRATE);
+setInterval(function(){g.update(io)}, TICKRATE);
 
 
 function updateMap( )

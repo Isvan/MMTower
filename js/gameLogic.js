@@ -8,14 +8,16 @@ var TICKRATE = 1000/TARGET_TICK_RATE;
 
 function Game(){
    
+    this.io = [];
     this.players = [];
     this.towers = [];
+    this.badGuys = [];
     this.base = new Base(6,6,100);
     this.kill = false;
     this.updateTimer = 0;
-    this.movementMap = genMovementMap(20,20,this.base,this.towers);
-    this.mapWidth = 20;
-    this.mapHeight = 20;
+    this.movementMap = genMovementMap(50,50,this.base,this.towers);
+    this.mapWidth = 50;
+    this.mapHeight = 50;
 }
 
 
@@ -31,9 +33,9 @@ function genMovementMap(width,height,base,towers){
 	//Moving object which tile to go to next to get to the base
 	var movementMap = createMultiDimArr(width,height,true);
 
-    movementMap[base.x][base.y] = new Vector2D(base.x,base.y);
+    movementMap[base.pos.x][base.pos.y] = new Vector2D(base.pos.x,base.pos.y);
 	//This is our destination
-	queue.push(new Vector2D(base.x,base.y));
+	queue.push(new Vector2D(base.pos.x,base.pos.y));
 
 	while(queue.length != 0){
 	//Grab next value in the queue
@@ -85,9 +87,18 @@ function checkValidSpot(x,y,towers,movementMap,width,height){
 	
 	//Check if there is a tower there
 	for(var i =0;i < towers.length;i++){
-		if(x==towers[i].x && y==towers[i].y){
-		return false;
-		}
+        
+        //Check if the pos method exists
+        if(towers[i].pos){
+            if(x==towers[i].pos.x && y==towers[i].pos.y){
+                return false;
+            }
+        }else{
+            if(x==towers[i].x && y==towers[i].y){
+                return false;
+            }
+        }
+		
 	}
 	
 	//Check to see if we have been to that position yet
@@ -104,10 +115,9 @@ Game.prototype = {
     
     init : function(){
         
-       
     }
     ,
-    update : function(){
+    update : function(io){
         //This will update everything and send out sync messages
         if(this.kill){
           //  clearInterval();
@@ -116,31 +126,65 @@ Game.prototype = {
         
         //Use this so the server tick rate can be 60/s but data is only sent 30/s or less depending on update ratio 
         if(this.updateTimer == UPDATE_RATIO){
-         //io.sockets.emit('users_count', clients);
+           io.emit('tick', {badGuys:this.badGuys});
            this.updateTimer = 0;
         }
         
         this.updateTimer++;
+        
+        var toRemove = [];
+        
+        for(var i = 0;i < this.badGuys.length;i ++){
+        
+            this.badGuys[i].move(this.movementMap);
+            
+            if(this.badGuys[i].isSame(base.pos)){
+                //Mark down we want to kill this one
+                toRemove.push(i);
+            
+            }
+        }
+    
+        for(var k = 0;k < toRemove.length;k++){
+        
+            //Remove from the array
+            badGuys.splice(k,1);
+        
+        }
+    
+    
     }
     ,
     newTower : function(id,x,y){
-        this.towers.push(new Vector2D(x,y));
-        
+        this.towers.push(new Tower(x,y,id));
         
     }
     ,
      toggleTower : function(id,x,y){
         
+        //Check if it exists
         for(var i=0;i < this.towers.length;i++){
             
-            if(this.towers[i].x == x && this.towers[i].y == y){
+            
+            if(this.towers[i].pos){
+                if(this.towers[i].pos.x == x && this.towers[i].pos.y == y){
                 
-                this.towers.splice(i,1);
-                return;
+                    this.towers.splice(i,1);
+                    return;
+                }    
                 
+            }else{
+                if(this.towers[i].x == x && this.towers[i].y == y){
+                
+                    this.towers.splice(i,1);
+                    return;
+                }    
+                    
             }
             
         }
+        
+        //If not add a new one
         this.towers.push(new Vector2D(x,y));
         
         

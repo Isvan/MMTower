@@ -1,8 +1,7 @@
 function Base(x,y,hp){
     
     //So we can grab the position as one object
-    this.x = x;
-    this.y = y;
+    this.pos = new Vector2D(x,y);
     //Set hp
     this.maxHp = hp;
     this.curHp = hp;
@@ -41,21 +40,18 @@ Base.prototype = {
 }
 
 function Tower(x,y,id){
-    
-    this.x = x;
-    this.y = y;
-    
+ 
+    this.pos = new Vector2D(x,y);
     this.ownerId = id;
 }
 
 function badGuy(x,y,hp,speed,damg){
     
-    this.x = x;
-    this.y = y;
     this.curHp = hp;
     this.speed = speed;
     this.damg = damg;
     this.isDead = false;
+    this.pos = new Vector2D(x,y);
 }
 
 badGuy.prototype = {
@@ -65,9 +61,15 @@ badGuy.prototype = {
         if(this.curHp <= 0){
             this.isDead = true;
         }
-   }
-   ,
-   
+   },
+    move : function(movementMap){
     
+    newX = movementMap[this.x][this.y].x;
+    newY = movementMap[this.x][this.y].y;
+    
+    this.pos.x = newX;
+    this.pos.y = newY;
+    
+   }
     
 }

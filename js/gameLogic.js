@@ -12,12 +12,13 @@ function Game(){
     this.players = [];
     this.towers = [];
     this.badGuys = [];
-    this.base = new Base(6,6,100);
     this.kill = false;
-    this.updateTimer = 0;
-    this.movementMap = genMovementMap(50,50,this.base,this.towers);
-    this.mapWidth = 50;
-    this.mapHeight = 50;
+    this.updateTimer = 0;  
+    this.mapWidth = 25;
+    this.mapHeight = 25;
+    this.base = new Base(Math.floor(this.mapWidth/2),Math.floor(this.mapHeight/2),100);
+    this.movementMap = genMovementMap(this.mapWidth,this.mapHeight,this.base,this.towers);
+    this.updateMap = false;
 }
 
 
@@ -124,6 +125,13 @@ Game.prototype = {
         }
         //Update server side info
         
+        if(this.updateMap){
+            
+            this.movementMap = genMovementMap(this.mapWidth,this.mapHeight,this.base,this.towers);          
+            io.emit("mapUpdate",{map:this.movementMap,towers:this.towers,base:this.base})
+            this.updateMap = false;
+        }
+        
         //Use this so the server tick rate can be 60/s but data is only sent 30/s or less depending on update ratio 
         if(this.updateTimer == UPDATE_RATIO){
            io.emit('tick', {badGuys:this.badGuys});
@@ -138,9 +146,13 @@ Game.prototype = {
         
             this.badGuys[i].move(this.movementMap);
             
-            if(this.badGuys[i].isSame(base.pos)){
+            if(this.badGuys[i].pos.isSame(this.base.pos) || this.badGuys[i].isDead){
                 //Mark down we want to kill this one
-                toRemove.push(i);
+                //toRemove.push(i);
+                this.badGuys[i].pos.x = Math.floor(Math.random() * (this.mapWidth - 3)) + 2;
+                this.badGuys[i].pos.y = Math.floor(Math.random() * (this.mapWidth - 3)) + 2;
+                this.badGuys[i].speed = Math.floor(Math.random() * 100) + 20;
+                this.badGuys[i].isDead = false;
             
             }
         }
@@ -148,7 +160,7 @@ Game.prototype = {
         for(var k = 0;k < toRemove.length;k++){
         
             //Remove from the array
-            badGuys.splice(k,1);
+            this.badGuys.splice(k,1);
         
         }
     
@@ -196,6 +208,15 @@ Game.prototype = {
              
         
     }
+    
+    ,
+    addBadGuy : function(x,y,speed,type){
+        //badGuy (x,y,hp,speed,damg) 
+        this.badGuys.push(new badGuy(x,y,10,speed,10));
+        
+    }
+    
+    
     ,
     
     newPlayer : function(player){

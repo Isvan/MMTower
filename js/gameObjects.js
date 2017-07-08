@@ -49,6 +49,7 @@ function badGuy(x,y,hp,speed,damg){
     
     this.curHp = hp;
     this.speed = speed;
+    this.stepCounter = 0;
     this.damg = damg;
     this.isDead = false;
     this.pos = new Vector2D(x,y);
@@ -64,11 +65,32 @@ badGuy.prototype = {
    },
     move : function(movementMap){
     
-    newX = movementMap[this.x][this.y].x;
-    newY = movementMap[this.x][this.y].y;
+    this.stepCounter += 1;
     
-    this.pos.x = newX;
-    this.pos.y = newY;
+    if(this.stepCounter < this.speed){
+        return;
+    }
+    this.stepCounter = 0;
+    //console.log("x : " + this.x + " y : " + this.y);
+    
+    if(movementMap == undefined || movementMap == null){
+        return;
+    }
+    
+    //Check if we just plopped a tower ontop of this guy
+    if(movementMap[this.pos.x][this.pos.y] != null && movementMap[this.pos.x][this.pos.y] != undefined){
+            
+        newX = movementMap[this.pos.x][this.pos.y].x;
+        newY = movementMap[this.pos.x][this.pos.y].y;
+    
+        this.pos.x = newX;
+        this.pos.y = newY;
+    
+    }else{
+        
+        this.isDead = true;
+        
+    }
     
    }
     

@@ -42,7 +42,7 @@ io.on("connection",function(socket){
         //Then send a message only to that group
 	
         //Send init info which is there id, and the current map status
-        io.sockets.in(socket.id).emit('join', {id: socket.id,map:genMovementMap(g.mapWidth,g.mapHeight,g.base,g.towers),towers:g.towers,base:g.base,mapWidth : g.mapWidth,mapHeight : g.mapHeight});
+        io.sockets.in(socket.id).emit('join', {id: socket.id,map:g.movementMap,towers:g.towers,base:g.base,mapWidth : g.mapWidth,mapHeight : g.mapHeight});
         g.newPlayer(new Player(name,socket));
         console.log("Player " + name + " joined and was given id " + socket.id);
     });
@@ -76,14 +76,20 @@ g = new Game();
 
 function sendMapData(){
     
-    io.emit("mapUpdate",{map:genMovementMap(g.mapWidth,g.mapHeight,g.base,g.towers),towers:g.towers,base:g.base})
-    
+    g.updateMap = true;
 }
 
 g.init();
 
 //How to make the interval to work because javascript :/
-setInterval(function(){g.update(io)}, TICKRATE);
+setInterval(function(){
+    g.update(io)
+    if(g.badGuys.length < 10){
+        
+        g.addBadGuy(Math.floor(Math.random() * (g.mapWidth - 2)) + 1  ,Math.floor(Math.random() * g.mapWidth - 2) + 1,20);
+        
+    }
+    }, TICKRATE);
 
 
 function updateMap( )

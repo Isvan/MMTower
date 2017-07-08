@@ -30,7 +30,8 @@ Vector2D.prototype = {
 	getY : function(){
 		return this.y;
 	}	
-	,isSame : function(b){
+	,
+    isSame : function(b){
     
     if(this.x == b.x && this.y == b.y){
     

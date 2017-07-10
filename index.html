@@ -42,6 +42,7 @@
   var map;
   var towers;
   var badGuys;
+  var badLocal = [];
   var base;
   var mapLoaded = false;
   var badGuysCon;
@@ -60,7 +61,7 @@
     mapCon = new PIXI.Container();
 	linesCon = new PIXI.Container();
 	towersCon = new PIXI.Container();
-   badGuysCon = new PIXI.Container();
+    badGuysCon = new PIXI.Container();
    
    
    loadMap();
@@ -79,10 +80,10 @@
       
         //This is the render Loop
         if(mapLoaded == false){
-            if(map != undefined){
+         
                 reloadMap();
                 mapLoaded = true;
-            }
+            
         
         }else{
         
@@ -315,52 +316,139 @@
 	}
 
     function drawBadGuys(){
-        badGuysCon.removeChildren();
-        for(var i = 0;i < badGuys.length;i++){
         
-            
-            badGuysCon.addChild(g.rectangle(gridSize / 2 , gridSize / 2, "rose","black",2,badGuys[i].pos.x*gridSize,badGuys[i].pos.y*gridSize));
+        //Mark all local as unused
+        for(var l = 0;l < badGuysCon.children.length;l++){
+        
+            badGuysCon.children[l].used = false;
         
         }
-    
+        
+        for(var i = 0;i < badGuys.length;i++){
+             
+             //Just so we dont have to recalc for each case
+             if(badGuys[i].nextPos != null){
+                        midpoints = midpoint(badGuys[i].pos.x,badGuys[i].pos.y,badGuys[i].nextPos.x,badGuys[i].nextPos.y,badGuys[i].stepProg);
+        
+                        xPos = midpoints[0]*gridSize + gridSize/4;
+                        yPos = midpoints[1]*gridSize + gridSize/4;
+        
+                       // xPos = badGuys[i].pos.x * gridSize + gridSize/4;            
+                        //yPos = badGuys[i].pos.y * gridSize + gridSize/4;
+        
+                    }else{
+            
+                        xPos = badGuys[i].pos.x*gridSize + gridSize/4;            
+                        yPos = badGuys[i].pos.y*gridSize + gridSize/4;
+            
+                    }
+        
+           
+            var found = false;
+            for(var k = 0;k < badGuysCon.children.length;k++){
+                //Go throught the local side to see if we have a matching id
+                if(badGuys[i].id == badGuysCon.children[k].id){
+                
+                   
+        
+                    badGuysCon.children[k].position.x = xPos;
+                    badGuysCon.children[k].position.y = yPos;
+                    badGuysCon.children[k].used = true;
+                    
+                    found = true;
+                    break;
+                }
+            
+            }
+        
+            //This is a new badGuy which we do not have the id for
+            //First see if we can use a badGuy that is no longer used
+            if(!found){
+            
+                for(var j = 0;j < badGuysCon.children.length;j++){
+                
+                    if(!badGuysCon.children[j].used){
+                      
+                   
+                        badGuysCon.children[j].position.x = xPos;
+                        badGuysCon.children[j].position.y = yPos;
+                        badGuysCon.children[j].id = badGuys[i].id;
+                        badGuysCon.children[j].used = true;
+                        found = true;
+                        break;
+                    }
+                }
+            
+                if(!found){
+                //Found is still false this means we did not found an unsed object, which means time to create a new one
+                
+                   
+                   
+                    badGuysCon.addChild(g.rectangle(gridSize / 2 , gridSize / 2, "rose","black",2,xPos,yPos));
+                    badGuysCon.children[badGuysCon.children.length - 1].id = badGuys[i].id;
+                    badGuysCon.children[badGuysCon.children.length - 1].used = true;
+                    
+                    
+                
+                }
+            
+            }
+        
+        }
+        
+        
+        //Now we check if something is still unsed we want to hide it
+        //Created this way, just so it works, can optimize later
+         for(var r = 0;r < badGuysCon.children.length;r++){
+         
+            if(badGuysCon.children[r].used == null || badGuysCon.children[r].used == false){
+                badGuysCon.children[r].visible = false;
+            }
+         
+         }
+       
     }
 	
 	function drawMapEtc(){
 	
-	if(map == undefined){
-		return;
-	}
-	
+    if(towers == undefined){
+        return;
+    }
+    
 	towersCon.removeChildren();
 	
 		for(var i = 0;i < towers.length;i++){
 	
-			towersCon.addChild(g.rectangle(gridSize , gridSize, "red","grey",5,towers[i].x*gridSize,towers[i].y*gridSize));
+			towersCon.addChild(g.rectangle(gridSize , gridSize, "red","grey",5,towers[i].pos.x*gridSize,towers[i].pos.y*gridSize));
 	
 		}
 	
-		if(base != null){
-			towersCon.addChild(g.rectangle(gridSize , gridSize, "green","grey",5,base.x*gridSize,base.y*gridSize));
+		if(base != null){           
+			towersCon.addChild(g.rectangle(gridSize , gridSize, "green","grey",5,base.pos.x*gridSize,base.pos.y*gridSize));
 		}
 	
 	}
   function reloadMap(){
   
-	drawMapLines();
+	//drawMapLines();
 	drawMapEtc();
 	
   }
+   
+   function midpoint(x1, y1, x2, y2, per) {
+     return [x1 + (x2 - x1) * per, y1 + (y2 - y1) * per];
+    }
    
   function loadMap(){
 
 	camera.removeChildren();
 	
 	drawMapBackGround();
-	drawMapLines();
+	//drawMapLines();
 	drawMapEtc();
 	
     camera.addChild(mapCon)
-	camera.addChild(linesCon);
+	//camera.addChild(linesCon);
 	camera.addChild(towersCon);
 	camera.addChild(badGuysCon);
 	
@@ -371,8 +459,9 @@
        id = data.id;
       // console.log("Got join data : " + id);
 	  // console.log("Movement Map! :" + JSON.stringify(data.test, null, 4));
-	   map = data.map;
+	   //map = data.map;
        towers = data.towers;
+       base = data.base;
 	   mapWidth = data.mapWidth;
 	   mapHeight = data.mapHeight;
        console.log("Connected with server!");
@@ -381,7 +470,7 @@
  
  socket.on('mapUpdate',function(data){
      
-     map = data.map;
+     //map = data.map;
      towers = data.towers;
      base = data.base;
      mapLoaded = false;

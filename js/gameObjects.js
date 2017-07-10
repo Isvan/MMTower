@@ -45,14 +45,17 @@ function Tower(x,y,id){
     this.ownerId = id;
 }
 
-function badGuy(x,y,hp,speed,damg){
+function badGuy(x,y,hp,speed,damg,id){
     
+    this.id = id;
     this.curHp = hp;
     this.speed = speed;
     this.stepCounter = 0;
     this.damg = damg;
     this.isDead = false;
     this.pos = new Vector2D(x,y);
+    this.nextPos = null;
+    this.stepProg = 0;
 }
 
 badGuy.prototype = {
@@ -65,33 +68,60 @@ badGuy.prototype = {
    },
     move : function(movementMap){
     
-    this.stepCounter += 1;
+        this.stepCounter += 1;
     
-    if(this.stepCounter < this.speed){
-        return;
-    }
-    this.stepCounter = 0;
-    //console.log("x : " + this.x + " y : " + this.y);
+        if(this.stepCounter < this.speed){
+            //Give a % of how close they are to the next node, usefull for animation and possibly the tower hit detection
+            this.stepProg = this.stepCounter / this.speed;
+            return;
+        }
+        
+        //Step counter is equal or greater than speed, so advance to the next tile
+        this.stepCounter = 0;
     
-    if(movementMap == undefined || movementMap == null){
-        return;
-    }
+        if(movementMap == undefined || movementMap == null){
+            return;
+        }
     
-    //Check if we just plopped a tower ontop of this guy
-    if(movementMap[this.pos.x][this.pos.y] != null && movementMap[this.pos.x][this.pos.y] != undefined){
+        if(this.nextPos == null){
+            this.nextPos = nextPoint(this.pos,movementMap);
+            if(this.nextPos == false){
+                this.isDead = true;
+                return;
+            }
+        }
+    
+        temp = this.pos;
+        this.pos = this.nextPos;
+        this.nextPos = nextPoint(this.pos,movementMap);
+        
+        //Check if the next spot is invalid hence kill it
+        if(this.pos == false){
             
-        newX = movementMap[this.pos.x][this.pos.y].x;
-        newY = movementMap[this.pos.x][this.pos.y].y;
-    
-        this.pos.x = newX;
-        this.pos.y = newY;
-    
-    }else{
-        
-        this.isDead = true;
-        
-    }
+            this.isDead = true;
+            this.pos = temp;
+        }
     
    }
+    
+}
+
+function nextPoint(pos,movementMap){
+    
+    if(movementMap[pos.x] == undefined){
+        return false;
+    }
+    
+    if(movementMap[pos.x][pos.y] != null && movementMap[pos.x][pos.y] != undefined){
+            
+        newX = movementMap[pos.x][pos.y].x;
+        newY = movementMap[pos.x][pos.y].y;
+        
+        return new Vector2D(newX,newY);
+        
+    }else{
+     //This position is invalid
+     return false;   
+    }
     
 }

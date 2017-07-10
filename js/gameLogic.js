@@ -128,7 +128,7 @@ Game.prototype = {
         if(this.updateMap){
             
             this.movementMap = genMovementMap(this.mapWidth,this.mapHeight,this.base,this.towers);          
-            io.emit("mapUpdate",{map:this.movementMap,towers:this.towers,base:this.base})
+            io.emit("mapUpdate",{towers:this.towers,base:this.base})
             this.updateMap = false;
         }
         
@@ -142,28 +142,29 @@ Game.prototype = {
         
         var toRemove = [];
         
-        for(var i = 0;i < this.badGuys.length;i ++){
+        for(var i = 0;i < this.badGuys.length;i++){
         
-            this.badGuys[i].move(this.movementMap);
-            
-            if(this.badGuys[i].pos.isSame(this.base.pos) || this.badGuys[i].isDead){
-                //Mark down we want to kill this one
-                //toRemove.push(i);
-                this.badGuys[i].pos.x = Math.floor(Math.random() * (this.mapWidth - 3)) + 2;
-                this.badGuys[i].pos.y = Math.floor(Math.random() * (this.mapWidth - 3)) + 2;
-                this.badGuys[i].speed = Math.floor(Math.random() * 100) + 20;
-                this.badGuys[i].isDead = false;
+            if(!this.badGuys[i].isDead){
+                this.badGuys[i].move(this.movementMap);
+            }
+          
+            if(this.badGuys[i].isDead || this.badGuys[i].pos.isSame(this.base.pos)){
+                //Mark down we want to kill this one               
+                toRemove.push(i);
             
             }
         }
-    
+        
+        if(toRemove.length != 0){
+        
         for(var k = 0;k < toRemove.length;k++){
         
-            //Remove from the array
-            this.badGuys.splice(k,1);
+                this.badGuys.splice(toRemove[k],1);
         
         }
+       
     
+        }
     
     }
     ,
@@ -197,7 +198,7 @@ Game.prototype = {
         }
         
         //If not add a new one
-        this.towers.push(new Vector2D(x,y));
+        this.newTower(0,x,y);
         
         
     }
@@ -210,13 +211,33 @@ Game.prototype = {
     }
     
     ,
-    addBadGuy : function(x,y,speed,type){
-        //badGuy (x,y,hp,speed,damg) 
-        this.badGuys.push(new badGuy(x,y,10,speed,10));
-        
+    addBadGuy : function(x,y,speed,id){
+        //badGuy x,y,hp,speed,damg,id 
+        this.badGuys.push(new badGuy(x,y,10,speed,10,id));
+       
     }
     
-    
+    ,
+    checkValidSpot : function(x,y){
+        
+        //Check out of bounds
+	if(x < 0 || x >= this.width || y < 0 || y >= this.height){
+		return false;
+	}
+	
+	//Check if there is a tower there
+	for(var i =0;i < this.towers.length;i++){
+        
+            if(x==this.towers[i].pos.x && y==this.towers[i].pos.y){
+                return false;
+            }
+        		
+	}
+	
+	//Else we can use this spot
+	return true;
+              
+    }
     ,
     
     newPlayer : function(player){

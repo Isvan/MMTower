@@ -374,6 +374,10 @@
                         badGuysCon.children[j].position.y = yPos;
                         badGuysCon.children[j].id = badGuys[i].id;
                         badGuysCon.children[j].used = true;
+                        
+                        //It might be invisible so just to be sure
+                        badGuysCon.children[j].visible = true;
+                        
                         found = true;
                         break;
                     }
@@ -387,6 +391,7 @@
                     badGuysCon.addChild(g.rectangle(gridSize / 2 , gridSize / 2, "rose","black",2,xPos,yPos));
                     badGuysCon.children[badGuysCon.children.length - 1].id = badGuys[i].id;
                     badGuysCon.children[badGuysCon.children.length - 1].used = true;
+                    
                     
                     
                 

@@ -84,11 +84,13 @@ g.init();
 //How to make the interval to work because javascript :/
 setInterval(function(){
     g.update(io)
-    if(g.badGuys.length < 10){
+    if(g.badGuys.length < 100){
         
         var x = Math.floor(Math.random() * (g.mapWidth - 2)) + 1;
         var y = Math.floor(Math.random() * (g.mapWidth - 2)) + 1;
-        
+        var speed = 3*(Math.floor(Math.random()*15) + 15);
+        //x=0;
+        //y=0;
         
         //Loop tillwe find a valid spot
         while(!g.checkValidSpot(x,y)){
@@ -96,7 +98,7 @@ setInterval(function(){
             y = Math.floor(Math.random() * (g.mapWidth - 2)) + 1;
         }
         
-        g.addBadGuy(x,y,Math.floor(Math.random()*30) + 30,Math.floor(Math.random()*1000));
+        g.addBadGuy(x,y,speed,Math.floor(Math.random()*1000));
         
     }
     }, TICKRATE);

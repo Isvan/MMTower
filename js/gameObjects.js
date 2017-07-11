@@ -78,6 +78,7 @@ badGuy.prototype = {
         
         //Step counter is equal or greater than speed, so advance to the next tile
         this.stepCounter = 0;
+        this.stepProg = 0;
     
         if(movementMap == undefined || movementMap == null){
             return;

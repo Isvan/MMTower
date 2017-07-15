@@ -20,13 +20,8 @@ include('./js/misc.js');
 
 
 app.get('/', function(req, res){
-res.sendFile(__dirname + '/index.html');
+res.sendFile(__dirname + '/index2.html');
 });
-
-app.get('/js/hexi.js', function(req, res){
-res.sendFile(__dirname + '/js/hexi.js');
-});
-
 
 
 app.get('/gameDat/*', function(req, res){
@@ -84,7 +79,7 @@ g.init();
 //How to make the interval to work because javascript :/
 setInterval(function(){
     g.update(io)
-    if(g.badGuys.length < 100){
+    if(g.badGuys.length < 1000){
         
         var x = Math.floor(Math.random() * (g.mapWidth - 2)) + 1;
         var y = Math.floor(Math.random() * (g.mapWidth - 2)) + 1;

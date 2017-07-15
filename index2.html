@@ -1,0 +1,507 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Game Thing</title>
+  </head>
+  <body id="body" style="margin:0">
+  <canvas id='game_canvas' width='0' height='0'></canvas>  
+  <div id="nameGet">
+   Enter your name : <input type="text" name="name" id="name">
+  
+   
+    <button onclick="connect()">GO</button>
+  </div>
+  </body>
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Get newest version of Pixi from a remote server -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/4.5.3/pixi.min.js"></script>
+  <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+    <script>
+    var socket = io();
+
+  //Dont need to load and files for now
+  thingsToLoad = [];
+  var g;
+  //Syncs per sec
+  SYNC_RATE = 10;
+  
+  //Map info
+  var map = null;
+  var mapWidth;
+  var mapHeight;
+  var mapWidthPixels = 0;
+  var mapHeightPixels = 0;
+  var mapLoaded = false;
+  var gridSize;
+  
+  
+  //Player info
+  var id;
+  var name;
+  
+  //Towers
+  var towers;
+  var base;
+  
+  //BadGuys Info
+  var badGuys;
+  var badLocal = [];
+ 
+  //Camera control
+  var mouseDown = false;
+  var lastXPos = 0;
+  var lastYPos = 0;
+  var timeClick;
+  
+  
+  //Containers
+  var camera;
+  var stage;
+  var badGuysCon;
+  var mapCon;
+  var linesCon;
+  var towersCon;
+  //PIXI Other
+  var renderer;
+  
+  function connect(){
+    name = $('#name').val();
+    socket.emit('join',name);
+  
+  }
+  
+  function initGame(){
+  
+    //Remove the div for getting the name
+    $("#nameGet").remove();
+  
+    //Create out PIXI containers
+    stage = new PIXI.Container();
+    camera = new PIXI.Container();
+   
+    mapCon = new PIXI.Container();
+	towersCon = new PIXI.Container();
+    badGuysCon = new PIXI.Container();
+  
+    camera.addChild(mapCon);
+    camera.addChild(towersCon);
+    camera.addChild(badGuysCon);
+    
+    //Handle the mouse clicks
+    camera.interactive = true;
+    
+    camera.click = function(mouseData){
+        cameraPointerClick(mouseData);
+    }
+    
+    
+    camera.pointerdown = function(mouseData){
+        cameraPointerDown(mouseData);
+       
+    }
+    
+    camera.pointerup = function(mouseData){  
+        cameraPointerUp(mouseData);   
+    }
+    camera.pointerout = function(mouseData){  
+        cameraPointerOut(mouseData); 
+    }
+    
+    
+    stage.addChild(camera);
+  
+   
+	gridSize = 40;
+  
+    //$("#grid").remove();
+    
+    //loadMap();
+    
+    //Create the canvas to use as our rendering screen
+    //var canvasTag = $("<canvas id='game_canvas' width='800' height='600'></canvas>");
+    
+    //Attach it
+    canvas = document.getElementById("game_canvas");
+  
+    //Set the canvas to take up the entire screen
+    canvas.width  = window.innerWidth - 5;
+    canvas.height = window.innerHeight - 5;
+    //Set up the renderer
+    renderer = PIXI.autoDetectRenderer(canvas.width,canvas.height,{view:canvas});
+  
+  
+    //Scroll!
+    if (canvas.addEventListener)
+    {
+        // IE9, Chrome, Safari, Opera
+        canvas.addEventListener("mousewheel", MouseWheelHandler, false);
+        // Firefox
+        canvas.addEventListener("DOMMouseScroll", MouseWheelHandler, false);
+    }else{
+        //Old IE Support not sure if it should relly be here
+        canvas.attachEvent("onmousewheel", MouseWheelHandler);
+    }
+    
+    
+    requestAnimationFrame(renderLoop);   
+}
+
+function cameraPointerUp(mouseData){
+    mouseDown = false;
+    
+    //If time betweeen clicks is less than 500 milisec.
+    //Stops registering a click when planning
+    if(Date.now() - timeClick < 150){
+    
+     var mouseX = renderer.plugins.interaction.mouse.global.x;
+            var mouseY = renderer.plugins.interaction.mouse.global.y;
+        
+         
+            var data = {};
+            data.id = id;
+            //Division is correct for zoom
+            //Sub is to corect for panning
+			data.x = Math.floor(((mouseX-camera.x)/camera.scale.x)/gridSize);
+			data.y = Math.floor(((mouseY-camera.y)/camera.scale.y)/gridSize);			
+            socket.emit('turret', data);
+    
+    }
+    
+}
+
+function cameraPointerDown(mouseData){
+        var mouseX = renderer.plugins.interaction.mouse.global.x;
+        var mouseY = renderer.plugins.interaction.mouse.global.y;
+
+       timeClick = Date.now()
+        
+        mouseDown = true;
+       lastXPos = mouseX;
+       lastYPos = mouseY;
+}
+
+function cameraPointerOut(mouseData){
+    mouseDown = false; 
+}
+
+function cameraPointerClick(mouseData){
+           
+}
+
+function renderLoop(){
+        
+        if(mapCon.children.length == 0){
+            drawMapBackGround();          
+        }
+
+       
+            //This is the render Loop
+            if(mapLoaded == false ){
+         
+                reloadMap();
+                mapLoaded = true;
+          
+            }
+        
+                panMap();
+                drawBadGuys();
+            
+        
+        
+    renderer.render(stage);
+    
+    requestAnimationFrame(renderLoop);
+
+} 
+    function pointHitMap(point){
+    //The camera looses its width and height properties for some reason,
+    //but they are based of the mapCon width and height so steal those
+    //but cant just use mapCon for everything as it does not get panned and zoomed
+        leftPoint = camera.x;
+        rightPoint = mapWidthPixels * camera.scaleX + camera.x;
+        
+        bottomPoint = camera.y;
+        topPoint = mapHeightPixels * camera.scaleY + camera.y;
+        
+        //Check x
+        if(point.x > leftPoint && point.x < rightPoint){
+           
+            if(point.y > bottomPoint && point.y < topPoint){
+                return true;
+            
+            }
+        
+        }
+    
+        
+    
+    return false;
+    
+    }
+ 
+    function panMap(){
+
+        if(!mouseDown){
+            return;
+        }
+    
+        var mouseX = renderer.plugins.interaction.mouse.global.x;
+        var mouseY = renderer.plugins.interaction.mouse.global.y;
+    
+        var deltaX = lastXPos - mouseX;
+        var deltaY = lastYPos - mouseY;
+        
+        lastXPos = mouseX;
+        lastYPos = mouseY;
+        
+        camera.x -= deltaX;
+        camera.y -= deltaY;
+        
+        return;
+    
+        var buffer = 100;
+        var triggerRange = 100;
+        var panSpeed = 7
+        
+        var mouseX = renderer.plugins.interaction.mouse.global.x;
+        var mouseY = renderer.plugins.interaction.mouse.global.y;
+       
+       
+        if(camera.y < mapHeightPixels - mapHeightPixels/2){
+            //Can move the camera down
+            if(mouseY < triggerRange){
+                //Mouse is on the top side of the screen
+               
+                    camera.y += panSpeed 
+                
+            }
+            
+        }
+
+        if(-1 * camera.y < mapHeightPixels - mapHeightPixels/2){
+            //Can move the camera up
+            if(window.innerHeight - mouseY < triggerRange){
+                //Mouse is on the bottom edge of the screen
+                  camera.y -= panSpeed;
+            }
+        }
+    
+        if(camera.x < mapWidthPixels - mapWidthPixels/2){
+            //Can move the camera down
+            if(mouseX < triggerRange){
+                //Mouse is on the top side of the screen
+                    camera.x += panSpeed 
+            }
+        }
+
+        if(-1 * camera.x < mapWidthPixels - mapWidthPixels/2){
+            //Can move the camera up
+            if(window.innerWidth - mouseX < triggerRange){
+                //Mouse is on the bottom edge of the screen
+               
+                    camera.x -= panSpeed;
+                
+            }
+        }
+    
+    
+    }
+ 
+    function MouseWheelHandler(e){
+    // cross-browser wheel delta
+        var e = window.event || e; // old IE support
+        var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
+        //Shamelessly stolen from stack overflow 
+    
+        var damper = 10;
+    
+        camera.scale.x = camera.scale.x + delta/damper;
+        camera.scale.y = camera.scale.y + delta/damper;
+         
+        //Bound the zoom
+        if(camera.scale.x < 0.1){
+            camera.scale.x = 0.1;
+            camera.scale.y = 0.1;
+        }
+    
+        
+    
+        return false;
+    }
+ 
+	function drawMapBackGround(){
+		mapCon.removeChildren();
+        
+         var rect = new PIXI.Graphics();
+                //Fill colour - White
+                rect.beginFill(0xFFFFFF);
+                //Line Style - 5 wide, Black
+                rect.lineStyle(5,0x000000);
+        
+		for(var i = 0;i < mapWidth;i++){
+		
+			for(var k = 0;k < mapHeight;k++){
+                //console.log("Creating child with dims : " + gridSize + " at pos " + (i*gridSize) + " , " + (k*gridSize));
+               
+                //Sqare at location with size x,y,width,height
+                rect.drawRect(i*gridSize,k*gridSize,gridSize,gridSize);
+                
+ 				
+			}
+		
+		}
+        rect.endFill();
+        mapCon.addChild(rect);
+        
+        if(mapWidthPixels == 0 || mapHeightPixels == 0){
+            
+            mapWidthPixels = mapCon.width;
+            mapHeightPixels = mapCon.height;
+            
+        }
+    
+    
+	}
+ 
+ 
+  
+    
+    function drawBadGuys(){
+    badGuysCon.removeChildren();
+         var rect = new PIXI.Graphics();
+                //Fill colour - White
+                rect.beginFill(0xFF1111);
+                //Line Style - 5 wide, Black
+                rect.lineStyle(5,0x000000);
+    
+        for(var i = 0;i< badGuys.length;i++){
+         
+                
+         if(badGuys[i].nextPos != null){
+                        midpoints = midpoint(badGuys[i].pos.x,badGuys[i].pos.y,badGuys[i].nextPos.x,badGuys[i].nextPos.y,badGuys[i].stepProg);
+        
+                        //console.log("Start poin tis : " + badGuys[i].pos.x + " end point " + badGuys[i].nextPos.x + " calced midpoint " + midpoints[0] + " with per " + badGuys[i].stepProg);
+        
+                        xPos = midpoints[0]*gridSize + gridSize/4;
+                        yPos = midpoints[1]*gridSize + gridSize/4;
+        
+                        //xPos = badGuys[i].pos.x * gridSize + gridSize/4;            
+                        //yPos = badGuys[i].pos.y * gridSize + gridSize/4;
+        
+                    }else{
+            
+                        xPos = badGuys[i].pos.x*gridSize + gridSize/4;            
+                        yPos = badGuys[i].pos.y*gridSize + gridSize/4;
+            
+                    }
+       
+        rect.drawRect(xPos,yPos,gridSize/2,gridSize/2);
+        
+        
+        }
+        
+    rect.endFill();
+    
+        if(badGuys.length != 0){
+            if(badGuysCon.children.length <= 0){
+                badGuysCon.addChild(rect);
+            }else{
+                badGuysCon.children[0] = rect;
+            }    
+    
+        }
+    }
+ 
+	function drawMapEtc(){
+	
+    if(towers == undefined){
+        return;
+    }
+    
+	towersCon.removeChildren();
+    var rect = new PIXI.Graphics();
+                //Fill colour - White
+                rect.beginFill(0x11FF11);
+                //Line Style - 5 wide, Black
+                rect.lineStyle(5,0x000000);
+	
+		for(var i = 0;i < towers.length;i++){
+	
+             rect.drawRect(towers[i].pos.x*gridSize,towers[i].pos.y*gridSize,gridSize,gridSize);
+			//towersCon.addChild(g.rectangle(gridSize , gridSize, "red","grey",5,,));
+	
+		}
+            rect.endFill();
+		if(base != null){  
+             rect.beginFill(0x1111FF);
+             rect.drawRect(base.pos.x*gridSize,base.pos.y*gridSize,gridSize,gridSize);
+			//towersCon.addChild(g.rectangle(gridSize , gridSize, "green","grey",5,,));
+		}
+	
+        towersCon.addChild(rect);
+    
+	}
+  function reloadMap(){
+  
+	drawMapEtc();
+	
+  }
+   
+   function midpoint(x1, y1, x2, y2, per) {
+     return [x1 + (x2 - x1) * per, y1 + (y2 - y1) * per];
+    }
+   
+  function loadMap(){
+
+	camera.removeChildren();
+	
+	drawMapBackGround();
+	drawMapEtc();
+	
+    camera.addChild(mapCon)
+	camera.addChild(towersCon);
+	camera.addChild(badGuysCon);
+	
+	}  
+   
+  socket.on('join',function(data){
+       //Server will give us an ID until we wait
+       id = data.id;
+      // console.log("Got join data : " + id);
+	  // console.log("Movement Map! :" + JSON.stringify(data.test, null, 4));
+	   //map = data.map;
+       towers = data.towers;
+       base = data.base;
+	   mapWidth = data.mapWidth;
+	   mapHeight = data.mapHeight;
+       console.log("Connected with server!");
+       mapLoaded = false;
+       
+       initGame();
+       
+  });
+ 
+ socket.on('mapUpdate',function(data){
+     
+     //map = data.map;
+     towers = data.towers;
+     base = data.base;
+     mapLoaded = false;
+ });
+
+ socket.on('tick',function(data){
+    
+     badGuys = data.badGuys;
+ });
+
+ 
+ 
+  
+  socket.on('disconnected', function() {
+
+        socket.emit('leave', id);
+
+  });
+  
+    </script>
+</html>

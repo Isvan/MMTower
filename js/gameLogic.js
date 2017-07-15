@@ -14,8 +14,8 @@ function Game(){
     this.badGuys = [];
     this.kill = false;
     this.updateTimer = 0;  
-    this.mapWidth = 25;
-    this.mapHeight = 25;
+    this.mapWidth = 50;
+    this.mapHeight = 50;
     this.base = new Base(Math.floor(this.mapWidth/2),Math.floor(this.mapHeight/2),100);
     this.movementMap = genMovementMap(this.mapWidth,this.mapHeight,this.base,this.towers);
     this.updateMap = false;
@@ -145,7 +145,7 @@ Game.prototype = {
         for(var i = 0;i < this.badGuys.length;i++){
         
             if(!this.badGuys[i].isDead){
-                this.badGuys[i].move(this.movementMap);
+                this.badGuys[i].update(this.movementMap);
             }
           
             if(this.badGuys[i].isDead || this.badGuys[i].pos.isSame(this.base.pos)){
@@ -155,13 +155,14 @@ Game.prototype = {
             }
         }
         
+        
         if(toRemove.length != 0){
+            //And now remove it
+            for(var k = 0;k < toRemove.length;k++){
         
-        for(var k = 0;k < toRemove.length;k++){
+                    this.badGuys.splice(toRemove[k],1);
         
-                this.badGuys.splice(toRemove[k],1);
-        
-        }
+            }
        
     
         }

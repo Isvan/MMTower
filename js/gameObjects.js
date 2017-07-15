@@ -39,6 +39,28 @@ Base.prototype = {
     
 }
 
+function bullet(start,target,damg,stepsToTarget){
+    
+    this.start = start;
+    this.target = target;
+    this.damg = damg;
+    this.prog = 0;
+    this.steps = stepsToTarget
+    this.reachedTarget = false;
+}
+
+bullet.prototype = {
+    
+    update : function(){
+        
+        
+        
+        
+    }
+    
+    
+}
+
 function Tower(x,y,id){
  
     this.pos = new Vector2D(x,y);
@@ -56,10 +78,39 @@ function badGuy(x,y,hp,speed,damg,id){
     this.pos = new Vector2D(x,y);
     this.nextPos = null;
     this.stepProg = 0;
+    this.bullets = [];
 }
 
 badGuy.prototype = {
+   
+   update : function(movementMap){
+       
+       this.move(movementMap);
+       
+       toRemove = [];
+       
+       for(var i = 0;i < this.bullets.legnth;i++){
+
+            this.bullets[i].update();
+            if(this.bullets[i].reacchedTarget){
+                
+                this.takeDamg(this.bullets[i].damg);
+                toRemove.push(i);
+                
+            }
+       
+       }
+        
+        //Check if we want to remove any of the bullets
+       for(var k = 0;k < toRemove.length;k++){
+           
+           this.bullets.splice(toRemove[k],1);
+           
+       }
     
+   }
+   ,
+   
    takeDamg : function(amount){
         this.curHp -= amount;
         if(this.curHp <= 0){

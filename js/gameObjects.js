@@ -71,30 +71,37 @@ function badGuy(x,y,hp,speed,damg,id){
     
     this.id = id;
     this.curHp = hp;
+    this.maxHp = hp;
     this.speed = speed;
     this.stepCounter = 0;
     this.damg = damg;
     this.isDead = false;
-    this.pos = new Vector2D(x,y);
-    this.nextPos = null;
-    this.stepProg = 0;
-    this.bullets = [];
+    
+    //This is all the data we will send to the cleint, wrap it up in an objets so its easy to send later
+    this.networkData = {};
+    this.networkData.pos = new Vector2D(x,y);
+    this.networkData.nextPos = null;
+    this.networkData.stepProg = 0;
+    this.networkData.hpProg = 1;
+    this.networkData.bullets = [];
+    this.networkData.type = 0;
+    
 }
 
 badGuy.prototype = {
    
    update : function(movementMap){
-       
+      
        this.move(movementMap);
        
        toRemove = [];
        
-       for(var i = 0;i < this.bullets.legnth;i++){
+       for(var i = 0;i < this.networkData.bullets.legnth;i++){
 
-            this.bullets[i].update();
-            if(this.bullets[i].reacchedTarget){
+            this.networkData.bullets[i].update();
+            if(this.networkData.bullets[i].reachedTarget){
                 
-                this.takeDamg(this.bullets[i].damg);
+                this.takeDamg(this.networkData.bullets[i].damg);
                 toRemove.push(i);
                 
             }
@@ -104,7 +111,7 @@ badGuy.prototype = {
         //Check if we want to remove any of the bullets
        for(var k = 0;k < toRemove.length;k++){
            
-           this.bullets.splice(toRemove[k],1);
+           this.networkData.bullets.splice(toRemove[k],1);
            
        }
     
@@ -113,45 +120,49 @@ badGuy.prototype = {
    
    takeDamg : function(amount){
         this.curHp -= amount;
+        
         if(this.curHp <= 0){
             this.isDead = true;
+            this.networkData.hpProg = 0;
+        }else{
+            this.networkData.hpProg = this.maxHp/this.curHp;
         }
    },
     move : function(movementMap){
     
-        this.stepCounter += 1;
-    
-        if(this.stepCounter < this.speed){
-            //Give a % of how close they are to the next node, usefull for animation and possibly the tower hit detection
-            this.stepProg = this.stepCounter / this.speed;
-            return;
-        }
-        
-        //Step counter is equal or greater than speed, so advance to the next tile
-        this.stepCounter = 0;
-        this.stepProg = 0;
-    
-        if(movementMap == undefined || movementMap == null){
-            return;
-        }
-    
-        if(this.nextPos == null){
-            this.nextPos = nextPoint(this.pos,movementMap);
-            if(this.nextPos == false){
+        if(this.networkData.nextPos == null){
+            this.networkData.nextPos = nextPoint(this.networkData.pos,movementMap);
+            if(this.networkData.nextPos == false){
                 this.isDead = true;
                 return;
             }
         }
     
-        temp = this.pos;
-        this.pos = this.nextPos;
-        this.nextPos = nextPoint(this.pos,movementMap);
+        this.stepCounter += 1;
+    
+        if(this.stepCounter < this.speed){
+            //Give a % of how close they are to the next node, usefull for animation and possibly the tower hit detection
+            this.networkData.stepProg = this.stepCounter / this.speed;
+            return;
+        }
+        
+        //Step counter is equal or greater than speed, so advance to the next tile
+        this.stepCounter = 0;
+        this.networkData.stepProg = 0;
+    
+        if(movementMap == undefined || movementMap == null){
+            return;
+        }
+    
+        temp = this.networkData.pos;
+        this.networkData.pos = this.networkData.nextPos;
+        this.networkData.nextPos = nextPoint(this.networkData.pos,movementMap);
         
         //Check if the next spot is invalid hence kill it
-        if(this.pos == false){
+        if(this.networkData.pos == false){
             
             this.isDead = true;
-            this.pos = temp;
+            this.networkData.pos = temp;
         }
     
    }
@@ -159,6 +170,7 @@ badGuy.prototype = {
 }
 
 function nextPoint(pos,movementMap){
+    
     
     if(movementMap[pos.x] == undefined){
         return false;

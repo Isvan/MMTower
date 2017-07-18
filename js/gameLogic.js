@@ -134,7 +134,16 @@ Game.prototype = {
         
         //Use this so the server tick rate can be 60/s but data is only sent 30/s or less depending on update ratio 
         if(this.updateTimer == UPDATE_RATIO){
-           io.emit('tick', {badGuys:this.badGuys});
+        
+           badGuysNetwork = [];
+           //We dont want to send the entire object, so only grab things in the marked "networkData" object
+           for(var i = 0;i < this.badGuys.length;i++){
+           
+                badGuysNetwork.push(this.badGuys[i].networkData);
+           
+           }
+        
+           io.emit('tick', {badGuys:badGuysNetwork});
            this.updateTimer = 0;
         }
         
@@ -148,7 +157,7 @@ Game.prototype = {
                 this.badGuys[i].update(this.movementMap);
             }
           
-            if(this.badGuys[i].isDead || this.badGuys[i].pos.isSame(this.base.pos)){
+            if(this.badGuys[i].isDead || this.badGuys[i].networkData.pos.isSame(this.base.pos)){
                 //Mark down we want to kill this one               
                 toRemove.push(i);
             

@@ -43,3 +43,22 @@ Vector2D.prototype = {
     
     }
 }
+
+
+//Returns true if the distance between the two points is less than the given distance
+//and false if the points are futher away than
+function distanceGreaterThan(x1,y1,x2,y2,distance){
+    
+    distanceForm = Math.pow((x1 - x2),2) + Math.pow((y1 - y2),2);
+    
+    //console.log("x1 : " + x1 + " y1 : " + y1 + " x2 : " + x2 + " y2 : " + y2 + " distanceForm : " + distanceForm + " distance " + distance);
+    
+    if(Math.pow(distance,2) < distanceForm){
+        
+        return false;
+    }else{
+        
+        return true;
+    }
+    
+}

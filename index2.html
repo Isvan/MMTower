@@ -13,6 +13,8 @@
   </div>
   </body>
   <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/spatialHash.js"></script>
+  
   <!-- Get newest version of Pixi from a remote server -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/4.5.3/pixi.min.js"></script>
   <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
@@ -24,6 +26,8 @@
   var g;
   //Syncs per sec
   SYNC_RATE = 10;
+  
+  var serverFps = 0;
   
   //Map info
   var map = null;
@@ -63,6 +67,7 @@
   var towersCon;
   //PIXI Other
   var renderer;
+  
   
   function connect(){
     name = $('#name').val();
@@ -167,6 +172,18 @@ function cameraPointerUp(mouseData){
     
     }
     
+}
+
+function toggleTower(x,y){
+
+    var data = {};
+            data.id = id;
+            //Division is correct for zoom
+            //Sub is to corect for panning
+			data.x = x;
+			data.y = y;			
+            socket.emit('turret', data);
+
 }
 
 function cameraPointerDown(mouseData){
@@ -395,6 +412,12 @@ function renderLoop(){
             
                     }
        
+       if(badGuys[i].hit != true){
+            rect.lineStyle(5,0x000000);
+       }else{          
+            rect.lineStyle(5,0xeef442);
+       }
+       
         rect.drawRect(xPos,yPos,gridSize/2,gridSize/2);
         
         
@@ -431,13 +454,13 @@ function renderLoop(){
 			//towersCon.addChild(g.rectangle(gridSize , gridSize, "red","grey",5,,));
 	
 		}
-            rect.endFill();
+            
 		if(base != null){  
              rect.beginFill(0x1111FF);
              rect.drawRect(base.pos.x*gridSize,base.pos.y*gridSize,gridSize,gridSize);
 			//towersCon.addChild(g.rectangle(gridSize , gridSize, "green","grey",5,,));
 		}
-	
+	rect.endFill();
         towersCon.addChild(rect);
     
 	}
@@ -492,6 +515,9 @@ function renderLoop(){
  socket.on('tick',function(data){
     
      badGuys = data.badGuys;
+     
+    serverFps = data.serverFps;
+     
  });
 
  

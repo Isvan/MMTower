@@ -13,15 +13,17 @@ function include(f) {
   eval.apply(global, [read(f)]);
 }
 
+include('./js/misc.js');
+include('./js/quadTree.js');
+include('./js/spatialHash.js');
 include('./js/gameObjects.js');
 include('./js/gameLogic.js');
-include('./js/misc.js');
-
 
 
 app.get('/', function(req, res){
 res.sendFile(__dirname + '/index2.html');
 });
+
 
 
 app.get('/gameDat/*', function(req, res){
@@ -77,6 +79,7 @@ function sendMapData(){
 g.init();
 
 //How to make the interval to work because javascript :/
+
 setInterval(function(){
     g.update(io)
     if(g.badGuys.length < 1000){
@@ -96,7 +99,9 @@ setInterval(function(){
         g.addBadGuy(x,y,speed,Math.floor(Math.random()*1000));
         
     }
-    }, TICKRATE);
+    }, 5);
+
+
 
 
 function updateMap( )

@@ -65,6 +65,7 @@ function Tower(x,y,id){
  
     this.pos = new Vector2D(x,y);
     this.ownerId = id;
+    this.range = 4;
 }
 
 function badGuy(x,y,hp,speed,damg,id){
@@ -76,6 +77,9 @@ function badGuy(x,y,hp,speed,damg,id){
     this.stepCounter = 0;
     this.damg = damg;
     this.isDead = false;
+    this.width = 1;
+    this.height = 1;
+
     
     //This is all the data we will send to the cleint, wrap it up in an objets so its easy to send later
     this.networkData = {};
@@ -85,6 +89,7 @@ function badGuy(x,y,hp,speed,damg,id){
     this.networkData.hpProg = 1;
     this.networkData.bullets = [];
     this.networkData.type = 0;
+    this.networkData.hit = false;
     
 }
 
@@ -93,9 +98,10 @@ badGuy.prototype = {
    update : function(movementMap){
       
        this.move(movementMap);
+
        
        toRemove = [];
-       
+       this.networkData.hit = false;
        for(var i = 0;i < this.networkData.bullets.legnth;i++){
 
             this.networkData.bullets[i].update();

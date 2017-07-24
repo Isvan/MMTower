@@ -6,6 +6,9 @@ var UPDATE_RATIO = 2;
 var TARGET_TICK_RATE = 60;
 var TICKRATE = 1000/TARGET_TICK_RATE;
 
+//The smaller this number the more accurate but slower the spatial hash will be
+var hashSize = 4;
+
 function Game(){
    
     this.io = [];
@@ -19,6 +22,12 @@ function Game(){
     this.base = new Base(Math.floor(this.mapWidth/2),Math.floor(this.mapHeight/2),100);
     this.movementMap = genMovementMap(this.mapWidth,this.mapHeight,this.base,this.towers);
     this.updateMap = false;
+    this.lastTimeTick = new Date().getTime();
+    this.updatesPerSec = 0;
+
+    
+    //fillMapWithTowers(this,1000,this.mapWidth,this.mapHeight);
+    
 }
 
 
@@ -111,26 +120,43 @@ function checkValidSpot(x,y,towers,movementMap,width,height){
 	return true;
 }
 
+function fillMapWithTowers(game,numTowers,mapWidth,mapHeight){
+
+    for(var i = 0;i < numTowers;i++){
+    
+        var x = Math.floor(Math.random() * (mapWidth)) + 0;
+        var y = Math.floor(Math.random() * (mapHeight)) + 0; 
+       
+        game.toggleTower(x,y);
+       
+    
+    }
+
+}
 
 Game.prototype = {
+    
     
     init : function(){
         
     }
     ,
     update : function(io){
+    
+        var curTime = new Date().getTime();
+        
+        this.updatesPerSec = 1/((curTime - this.lastTimeTick)/1000);
+        this.lastTimeTick = curTime;                
+    
+        //var tree = new Quadtree({x:0,y:0,width:this.mapWidth,height:this.mapHeight},5,50);
+        var hash = new SpatialHash(hashSize);
+        
         //This will update everything and send out sync messages
         if(this.kill){
           //  clearInterval();
         }
-        //Update server side info
         
-        if(this.updateMap){
-            
-            this.movementMap = genMovementMap(this.mapWidth,this.mapHeight,this.base,this.towers);          
-            io.emit("mapUpdate",{towers:this.towers,base:this.base})
-            this.updateMap = false;
-        }
+        
         
         //Use this so the server tick rate can be 60/s but data is only sent 30/s or less depending on update ratio 
         if(this.updateTimer == UPDATE_RATIO){
@@ -143,8 +169,16 @@ Game.prototype = {
            
            }
         
-           io.emit('tick', {badGuys:badGuysNetwork});
+           io.emit('tick', {badGuys:badGuysNetwork,serverFps:this.updatesPerSec});
            this.updateTimer = 0;
+           
+            if(this.updateMap){
+            
+                this.movementMap = genMovementMap(this.mapWidth,this.mapHeight,this.base,this.towers);          
+                io.emit("mapUpdate",{towers:this.towers,base:this.base})
+                this.updateMap = false;
+            }
+           
         }
         
         this.updateTimer++;
@@ -153,19 +187,60 @@ Game.prototype = {
         
         for(var i = 0;i < this.badGuys.length;i++){
         
-            if(!this.badGuys[i].isDead){
-                this.badGuys[i].update(this.movementMap);
-            }
-          
-            if(this.badGuys[i].isDead || this.badGuys[i].networkData.pos.isSame(this.base.pos)){
+        
+             if(this.badGuys[i].isDead || this.badGuys[i].networkData.pos.isSame(this.base.pos)){
                 //Mark down we want to kill this one               
                 toRemove.push(i);
             
+            }else{
+                this.badGuys[i].update(this.movementMap);
+                //Also lets add it to our quadTree right now
+                //tree.insert({x:this.badGuys[i].networkData.pos.x,y:this.badGuys[i].networkData.pos.y,width:1,height:1,id:i})
+                hash.insert({x:this.badGuys[i].networkData.pos.x,y:this.badGuys[i].networkData.pos.y,width:1,height:1,id:i});
             }
+          
         }
+              
+       
         
-        
-        if(toRemove.length != 0){
+        badGuysHit = [];
+      
+    
+        for(var i = 0;i < this.towers.length;i++){
+            
+            
+            retrieveObj = {};
+            retrieveObj.x = this.towers[i].pos.x;
+            retrieveObj.y = this.towers[i].pos.y;
+            
+            //Do an oversample as the hash is by a square but we check by circile 
+            retrieveObj.width = this.towers[i].range+2;
+            retrieveObj.height = this.towers[i].range+2;
+            
+            //subSetBadGuysQuad = tree.retrieve(retrieveObj);
+            subSetBadGuysHash = hash.retrieve(retrieveObj);
+            
+            for(var k = 0;k < subSetBadGuysHash.length;k++){
+                
+                if(distanceGreaterThan(subSetBadGuysHash[k].x,subSetBadGuysHash[k].y,this.towers[i].pos.x,this.towers[i].pos.y,this.towers[i].range)){
+                    
+                    badGuysHit.push(subSetBadGuysHash[k].id);
+                    
+                }
+                
+            }
+            
+        }
+    
+        for(var i = 0;i < badGuysHit.length;i++){
+            
+            this.badGuys[badGuysHit[i]].networkData.hit = true;
+            
+            
+        }
+    
+    
+     if(toRemove.length != 0){
             //And now remove it
             for(var k = 0;k < toRemove.length;k++){
         
@@ -175,6 +250,8 @@ Game.prototype = {
        
     
         }
+    
+        
     
     }
     ,

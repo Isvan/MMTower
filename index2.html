@@ -13,7 +13,6 @@
   </div>
   </body>
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/spatialHash.js"></script>
   
   <!-- Get newest version of Pixi from a remote server -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/4.5.3/pixi.min.js"></script>
@@ -68,6 +67,8 @@
   //PIXI Other
   var renderer;
   
+  //Texture
+  var textures = {};
   
   function connect(){
     name = $('#name').val();
@@ -79,6 +80,13 @@
   
     //Remove the div for getting the name
     $("#nameGet").remove();
+  
+    
+    textures.tile = PIXI.Texture.fromImage('gameDat/tile.png');
+    textures.badGuy = PIXI.Texture.fromImage('gameDat/badGuy.png');
+    textures.badGuyHit = PIXI.Texture.fromImage('gameDat/badGuyHit.png');
+    textures.base = PIXI.Texture.fromImage('gameDat/base.png');
+    textures.tower = PIXI.Texture.fromImage('gameDat/tower.png');
   
     //Create out PIXI containers
     stage = new PIXI.Container();
@@ -116,7 +124,7 @@
     stage.addChild(camera);
   
    
-	gridSize = 40;
+	gridSize = 16;
   
     //$("#grid").remove();
     
@@ -349,26 +357,26 @@ function renderLoop(){
 	function drawMapBackGround(){
 		mapCon.removeChildren();
         
-         var rect = new PIXI.Graphics();
-                //Fill colour - White
-                rect.beginFill(0xFFFFFF);
-                //Line Style - 5 wide, Black
-                rect.lineStyle(5,0x000000);
+         
         
 		for(var i = 0;i < mapWidth;i++){
 		
 			for(var k = 0;k < mapHeight;k++){
                 //console.log("Creating child with dims : " + gridSize + " at pos " + (i*gridSize) + " , " + (k*gridSize));
-               
+                var rect = new PIXI.Sprite(textures.tile);
                 //Sqare at location with size x,y,width,height
-                rect.drawRect(i*gridSize,k*gridSize,gridSize,gridSize);
                 
+                //rect.anchor.set(0.5);
+                rect.x = i*16;
+                rect.y = k*16;            
+                //rect.drawRect(i*gridSize,k*gridSize,gridSize,gridSize);
+                mapCon.addChild(rect);
  				
 			}
 		
 		}
-        rect.endFill();
-        mapCon.addChild(rect);
+       
+       
         
         if(mapWidthPixels == 0 || mapHeightPixels == 0){
             
@@ -385,11 +393,8 @@ function renderLoop(){
     
     function drawBadGuys(){
     badGuysCon.removeChildren();
-         var rect = new PIXI.Graphics();
-                //Fill colour - White
-                rect.beginFill(0xFF1111);
-                //Line Style - 5 wide, Black
-                rect.lineStyle(5,0x000000);
+        
+          
     
         for(var i = 0;i< badGuys.length;i++){
          
@@ -413,26 +418,20 @@ function renderLoop(){
                     }
        
        if(badGuys[i].hit != true){
-            rect.lineStyle(5,0x000000);
+            var rect = new PIXI.Sprite(textures.badGuy);
        }else{          
-            rect.lineStyle(5,0xeef442);
+            var rect = new PIXI.Sprite(textures.badGuyHit);
        }
        
-        rect.drawRect(xPos,yPos,gridSize/2,gridSize/2);
+       
+        //rect.anchor.set(0.5);
+        rect.x = xPos;
+        rect.y = yPos;
         
+        badGuysCon.addChild(rect)
         
         }
-        
-    rect.endFill();
     
-        if(badGuys.length != 0){
-            if(badGuysCon.children.length <= 0){
-                badGuysCon.addChild(rect);
-            }else{
-                badGuysCon.children[0] = rect;
-            }    
-    
-        }
     }
  
 	function drawMapEtc(){
@@ -442,26 +441,30 @@ function renderLoop(){
     }
     
 	towersCon.removeChildren();
-    var rect = new PIXI.Graphics();
-                //Fill colour - White
-                rect.beginFill(0x11FF11);
-                //Line Style - 5 wide, Black
-                rect.lineStyle(5,0x000000);
+    
+   
 	
 		for(var i = 0;i < towers.length;i++){
-	
-             rect.drawRect(towers[i].pos.x*gridSize,towers[i].pos.y*gridSize,gridSize,gridSize);
+             var rect = new PIXI.Sprite(textures.tower);
+            //rect.anchor.set(0.5);
+            rect.x = towers[i].pos.x*textures.tile.width;
+            rect.y = towers[i].pos.y*textures.tile.height;
+             //rect.drawRect(,towers[i].pos.y*gridSize,gridSize,gridSize);
 			//towersCon.addChild(g.rectangle(gridSize , gridSize, "red","grey",5,,));
-	
+                towersCon.addChild(rect);
 		}
             
 		if(base != null){  
-             rect.beginFill(0x1111FF);
-             rect.drawRect(base.pos.x*gridSize,base.pos.y*gridSize,gridSize,gridSize);
+            var rect = new PIXI.Sprite(textures.base);
+            //rect.anchor.set(0.5);
+            rect.x = base.pos.x*textures.tile.width;
+            rect.y = base.pos.y*textures.tile.height;
+             //rect.drawRect(base.pos.x*gridSize,base.pos.y*gridSize,gridSize,gridSize);
 			//towersCon.addChild(g.rectangle(gridSize , gridSize, "green","grey",5,,));
-		}
-	rect.endFill();
-        towersCon.addChild(rect);
+            towersCon.addChild(rect);
+        }
+	
+        
     
 	}
   function reloadMap(){

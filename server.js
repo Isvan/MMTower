@@ -1,6 +1,9 @@
-var app = require('express')();
+var express = require('express');
+var app = express();
 var http = require('http').Server(app);
 var io = require("socket.io")(http);
+var path = require('path');
+
 
 
 //For including other JS files server side
@@ -19,17 +22,22 @@ include('./js/spatialHash.js');
 include('./js/gameObjects.js');
 include('./js/gameLogic.js');
 
+app.use("/gameDat", express.static(__dirname + '/gameDat'));
+
 
 app.get('/', function(req, res){
 res.sendFile(__dirname + '/index2.html');
 });
 
-
-
-app.get('/gameDat/*', function(req, res){
-res.sendFile(__dirname + '/gameDat/*');
+app.get('/gameDat/tile.png', function(req, res){
+res.sendFile(__dirname + '/gameDat/tile.png');
 });
 
+/*
+app.get('/gameDat/badGuy.png', function(req, res){
+res.sendFile(__dirname + '/gameDat/badGuy.png');
+});
+*/
 
 io.on("connection",function(socket){
     socket.on('join',function firstConnect(name){
@@ -99,7 +107,7 @@ setInterval(function(){
         g.addBadGuy(x,y,speed,Math.floor(Math.random()*1000));
         
     }
-    }, 5);
+    }, 2);
 
 
 

@@ -208,6 +208,7 @@ Game.prototype = {
     
         for(var i = 0;i < this.towers.length;i++){
             
+            this.towers[i].update();
             
             retrieveObj = {};
             retrieveObj.x = this.towers[i].pos.x;
@@ -224,7 +225,10 @@ Game.prototype = {
                 
                 if(distanceGreaterThan(subSetBadGuysHash[k].x,subSetBadGuysHash[k].y,this.towers[i].pos.x,this.towers[i].pos.y,this.towers[i].range)){
                     
-                    badGuysHit.push(subSetBadGuysHash[k].id);
+                    if(this.towers[i].canFire){
+                        badGuysHit.push(subSetBadGuysHash[k].id);
+                        this.towers[i].fire();
+                    }
                     
                 }
                 

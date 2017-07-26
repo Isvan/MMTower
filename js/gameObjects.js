@@ -51,11 +51,14 @@ function bullet(start,target,damg,stepsToTarget){
 
 bullet.prototype = {
     
-    update : function(){
+    update : function(delta){
         
+        this.prog +=1;
+        if(this.prog > this.steps){
         
+            this.reachedTarget = true;
         
-        
+        }
     }
     
     
@@ -66,6 +69,32 @@ function Tower(x,y,id){
     this.pos = new Vector2D(x,y);
     this.ownerId = id;
     this.range = 4;
+    this.firerate = 100;
+    this.curFire = 0;
+    this.canFire = false;
+}
+
+Tower.prototype={
+
+    update : function(delta){
+    
+        this.curFire += 1;
+        
+        if(this.curFire > this.firerate){
+        this.curFire = this.firerate;
+        this.canFire = true;    
+        
+        }
+    
+    }
+    ,
+    fire : function(){
+    
+    this.curFire = 0;
+    this.canFire = false;
+    
+    }
+    
 }
 
 function badGuy(x,y,hp,speed,damg,id){

@@ -210,7 +210,11 @@ Game.prototype = {
 
         for(var i = 0;i < this.towers.length;i++){
 
-            this.towers[i].update();
+            this.towers[i].update(this.deltaTime);
+
+            if(!this.towers[i].canFire){
+              continue;
+            }
 
             retrieveObj = {};
             retrieveObj.x = this.towers[i].pos.x;
@@ -228,10 +232,11 @@ Game.prototype = {
               //Create dead code so I can make it loook smooth
                 if(distanceGreaterThan(subSetBadGuysHash[k].x,subSetBadGuysHash[k].y,this.towers[i].pos.x,this.towers[i].pos.y,this.towers[i].range)){
 
-                    //if(this.towers[i].canFire){
+                    if(this.towers[i].canFire){
                         badGuysHit.push(subSetBadGuysHash[k].id);
-                    //    this.towers[i].fire();
-                    //}
+                        this.towers[i].fire();
+                        break;
+                    }
 
                 }
 
@@ -241,7 +246,8 @@ Game.prototype = {
 
         for(var i = 0;i < badGuysHit.length;i++){
 
-            this.badGuys[badGuysHit[i]].networkData.hit = true;
+            this.badGuys[badGuysHit[i]].takeDamg(1);
+            //this.badGuys[badGuysHit[i]].networkData.hit = true;
 
 
         }
@@ -262,8 +268,8 @@ Game.prototype = {
 
     }
     ,
-    newTower : function(id,x,y){
-        this.towers.push(new Tower(x,y,id));
+    newTower : function(id,x,y,type){
+        this.towers.push(new Tower(x,y,id,type));
 
     }
     ,
@@ -307,7 +313,7 @@ Game.prototype = {
     ,
     addBadGuy : function(x,y,speed,id){
         //badGuy x,y,hp,speed,damg,id
-        this.badGuys.push(new badGuy(x,y,10,speed,10,id));
+        this.badGuys.push(new badGuy(x,y,100,speed,10,id));
 
     }
 
@@ -339,11 +345,44 @@ Game.prototype = {
         this.players.push(player);
 
     }
+
     ,
     getNumPlayers : function(){
         //Get the numdber of players connected
         return this.players.length;
 
+    }
+    ,
+    getPlayerName : function(id){
+
+      for(var i = 0;i < this.getNumPlayers();i++){
+//console.log("Check " + id + " v " + this.player[i].socket.id);
+        if(id == this.players[i].id){
+          return this.players[i].name;
+        }
+
+      }
+
+      return null;
+
+    }
+    ,
+    removePlayer : function(id){
+
+      var loc = -1;
+
+      for(var i = 0;i < this.getNumPlayers();i++){
+
+        if(id == this.players[i].id){
+          loc = i;
+          break;
+        }
+
+      }
+
+      if(loc != -1){
+        this.players.splice(loc,1);
+      }
     }
 
 }

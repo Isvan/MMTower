@@ -47,7 +47,7 @@ function compressBadGuys(badGuys){
 
   }
 
-//Now convert to chars
+//Now convert to chars to send over the network
   var ucharView  = new Uint8Array( output.buffer );
   var compressedOutput = String.fromCharCode.apply(
     String, [].slice.call( ucharView, 0 )

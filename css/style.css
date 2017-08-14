@@ -1,0 +1,59 @@
+body{
+  /*margin: 40px;*/
+}
+
+.leftsidebar {
+  grid-area: lsidebar;
+}
+
+.rightsidebar {
+  grid-area: rsidebar;
+}
+
+.chatbar {
+
+  grid-area: chat;
+  overflow: auto;
+  height: 7vh;
+}
+
+.chatSend {
+
+  grid-area: chatSnd;
+
+}
+
+.content {
+  grid-area: content;
+}
+
+
+    .wrapper {
+        display: grid;
+    /*grid-gap: 10px;*/
+        grid-template-columns: 10% 80% 10%;
+        grid-template-rows: 30% 30% 20% 8% 2%;
+        grid-template-areas:
+        "lsidebar content rsidebar"
+        "lsidebar content rsidebar"
+        "lsidebar  content  rsidebar"
+        "lsidebar chat rsidebar"
+        "lsidebar chatSnd rsidebar"
+        ;
+        background-color: #fff;
+        color: #444;
+    }
+
+
+
+.box {
+  background-color: #444;
+  color: #fff;
+  /*padding: 10px;*/
+  font-size: 150%;
+}
+
+.header,
+.footer {
+  background-color: #999;
+}

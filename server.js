@@ -3,6 +3,9 @@ var app = express();
 var http = require('http').Server(app);
 var io = require("socket.io")(http);
 var path = require('path');
+var sanitizeHtml = require('sanitize-html');
+
+
 
 var args = process.argv.slice(2);
 console.dir(args);
@@ -31,6 +34,9 @@ var TICKRATE = 1000/TARGET_TICK_RATE;
 
 app.use("/gameDat", express.static(__dirname + '/gameDat'));
 
+app.use("/css", express.static(__dirname + '/css'));
+
+
 app.get('/js/compressing.js', function(req, res){
 res.sendFile(__dirname + '/js/compressing.js');
 });
@@ -56,7 +62,13 @@ io.on("connection",function(socket){
         //Send init info which is there id, and the current map status
         io.sockets.in(socket.id).emit('join', {id: socket.id,towers:g.towers,base:g.base,mapWidth : g.mapWidth,mapHeight : g.mapHeight});
         g.newPlayer(new Player(name,socket));
-        console.log("Player " + name + " joined and was given id " + socket.id);
+        var address = socket.handshake.address;
+        console.log("Player " + name + " joined and was given id " + socket.id + " ip " + address);
+
+        data = {};
+        data.msg = name + " has joined";
+        data.usr = "Server";
+        io.emit('chat', data);
     });
 
   socket.on('turret',function(data){
@@ -68,14 +80,29 @@ io.on("connection",function(socket){
       sendMapData();
   });
 
-  socket.on('sync',function(data){
-      socket.broadcast.emit('sync',data);
-        //io.emit('sync', data);
+  socket.on('chat',function(data){
+
+   data.msg = sanitizeHtml(data.msg);
+   data.use = sanitizeHtml(data.usr);
+
+        io.emit('chat', data);
    });
 
     socket.on('disconnect', function () {
 
         console.log("PlayerID left : " + socket.id);
+        var player =  g.getPlayerName(socket.id);
+
+        data = {};
+        data.usr = "Server";
+
+        if(player == null){
+          data.msg = "Unkown player has left";
+        }else{
+          data.msg = player + " has left";
+        }
+
+        io.emit('chat', data);
 
     });
 
@@ -110,7 +137,7 @@ setInterval(function(){
 
           var x = Math.floor(Math.random() * (g.mapWidth - 2)) + 1;
           var y = Math.floor(Math.random() * (g.mapWidth - 2)) + 1;
-          var speed = 3*(Math.floor(Math.random()*50) + 100);
+          var speed = 3*(Math.floor(Math.random()*50) + 150);
         //x=0;
         //y=0;
 

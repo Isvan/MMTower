@@ -64,12 +64,12 @@ bullet.prototype = {
 
 }
 
-function Tower(x,y,id){
+function Tower(x,y,id,type){
 
     this.pos = new Vector2D(x,y);
     this.ownerId = id;
-    this.range = 4;
-    this.firerate = 100;
+    this.range = 2;
+    this.firerate = 200;
     this.curFire = 0;
     this.canFire = false;
 }
@@ -78,7 +78,7 @@ Tower.prototype={
 
     update : function(delta){
 
-        this.curFire += 1;
+        this.curFire += delta;
 
         if(this.curFire > this.firerate){
         this.curFire = this.firerate;
@@ -160,7 +160,7 @@ badGuy.prototype = {
             this.isDead = true;
             this.networkData.hpProg = 0;
         }else{
-            this.networkData.hpProg = this.maxHp/this.curHp;
+            this.networkData.hpProg = this.curHp/this.maxHp;
         }
    },
     move : function(movementMap,delta){

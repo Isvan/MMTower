@@ -1,16 +1,39 @@
 <!doctype html>
 <html>
+<link rel="stylesheet" href="/css/style.css">
   <head>
     <title>Game Thing</title>
   </head>
-  <body id="body" style="margin:0">
-  <canvas id='game_canvas' width='0' height='0'></canvas>
-  <div id="nameGet">
-   Enter your name : <input type="text" name="name" id="name">
-
-
+  <body id="body" style="margin:0" onresize="reSize()">
+  <div class="wrapper">
+    <div class="content" id="Content">
+      <div id="nameGet">
+     Enter your name : <input type="text" name="name" id="name">
     <button onclick="connect()">GO</button>
+    </div>
+    <canvas id='game_canvas' width='0' height='0'></canvas>
+    </div>
+
+    <div class="rightsidebar">
+      <div id="serverFps">
+      </div>
+
+    </div>
+    <div class="leftsidebar">LEFT</div>
+
+    <div class="chatbar" id="chatbar">
+        <div class="scrollBox" id="chat">
+
+        </div>
+    </div>
+
+    <div class="chatSend">
+      <input name="usermsg" type="text" id="usermsg" style="width: inherit" />
+      <button onclick="sendChat()">Send</button>
+    </div>
+
   </div>
+
   </body>
   <script src="/js/compressing.js"></script>
   <script src="/socket.io/socket.io.js"></script>
@@ -139,12 +162,14 @@
     //Attach it
     canvas = document.getElementById("game_canvas");
 
-    //Set the canvas to take up the entire screen
-    canvas.width  = window.innerWidth - 5;
-    canvas.height = window.innerHeight - 5;
-    //Set up the renderer
-    renderer = PIXI.autoDetectRenderer(canvas.width,canvas.height,{view:canvas});
+    var width  = window.innerWidth*0.8;
+    var height = window.innerHeight*0.9;
+    //canvas.height = canvas.height/2;
 
+    //Set up the renderer
+    renderer = PIXI.autoDetectRenderer(width,height,{view:canvas});
+
+    reSize();
 
     //Scroll!
     if (canvas.addEventListener)
@@ -214,6 +239,16 @@ function cameraPointerOut(mouseData){
 }
 
 function cameraPointerClick(mouseData){
+
+}
+
+function reSize(){
+
+  var width  = window.innerWidth*0.8;
+  var height = window.innerHeight*0.9;
+  renderer.resize(width,height);
+
+  $("#chat").height(window.innerHeigh*0.05);
 
 }
 
@@ -387,6 +422,7 @@ function renderLoop(){
             var rect = new PIXI.Sprite(textures.badGuyHit);
        }
 
+       rect.alpha = badGuys[i+5];
 
         //rect.anchor.set(0.5);
         rect.x = xPos;
@@ -462,6 +498,28 @@ function renderLoop(){
 
 	}
 
+
+//Detect when enter is pushed
+$("#usermsg").on('keyup', function (e) {
+      if (e.keyCode == 13) {
+          sendChat();
+      }
+  });
+
+
+
+function sendChat(){
+
+
+  var data = {};
+  data.msg = $("#usermsg").val();
+  data.usr = name;
+  socket.emit('chat', data);
+
+  $("#usermsg").val("");
+
+}
+
   socket.on('join',function(data){
        //Server will give us an ID until we wait
        id = data.id;
@@ -491,6 +549,17 @@ function renderLoop(){
 
      badGuys = depressBadGuys(data.badGuys);
      serverFps = data.serverFps;
+
+     $("#serverFps").html("Server Fps <br>: " + serverFps);
+
+ });
+
+socket.on('chat',function(data){
+
+  $("#chat").append(data.usr + " : " + data.msg + "<br>");
+
+  //Scroll the chat bar down
+  $("#chatbar").scrollTop($("#chatbar")[0].scrollHeight);
 
  });
 

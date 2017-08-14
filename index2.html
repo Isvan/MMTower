@@ -12,6 +12,7 @@
     <button onclick="connect()">GO</button>
   </div>
   </body>
+  <script src="/js/compressing.js"></script>
   <script src="/socket.io/socket.io.js"></script>
 
   <!-- Get newest version of Pixi from a remote server -->
@@ -25,6 +26,7 @@
   var g;
   //Syncs per sec
   SYNC_RATE = 25;
+  var toUpdate = [];
 
   var serverFps = 0;
 
@@ -87,6 +89,7 @@
     textures.badGuyHit = PIXI.Texture.fromImage('gameDat/badGuyHit.png');
     textures.base = PIXI.Texture.fromImage('gameDat/base.png');
     textures.tower = PIXI.Texture.fromImage('gameDat/tower.png');
+    textures.bullet = PIXI.Texture.fromImage('gameDat/bullet.png');
 
     //Create out PIXI containers
     stage = new PIXI.Container();
@@ -176,8 +179,8 @@ function cameraPointerUp(mouseData){
             //Sub is to corect for panning
 			data.x = Math.floor(((mouseX-camera.x)/camera.scale.x)/gridSize);
 			data.y = Math.floor(((mouseY-camera.y)/camera.scale.y)/gridSize);
-            socket.emit('turret', data);
-
+      toggleTower(data.x,data.y);
+      //socket.emit('turret', data);
     }
 
 }
@@ -190,8 +193,8 @@ function toggleTower(x,y){
             //Sub is to corect for panning
 			data.x = x;
 			data.y = y;
-      //queue this to be sent 
-      socket.emit('turret', data);
+      //queue this to be sent
+    toUpdate.push(data);
 
 }
 
@@ -235,6 +238,12 @@ function renderLoop(){
 
 
     renderer.render(stage);
+
+    if(toUpdate.length != 0){
+
+        socket.emit('turret', toUpdate);
+        toUpdate.splice(0,toUpdate.length);
+    }
 
     requestAnimationFrame(renderLoop);
 
@@ -350,34 +359,29 @@ function renderLoop(){
     function drawBadGuys(){
     badGuysCon.removeChildren();
 
+        for(var i = 0;i< badGuys.length;i += numItemsPerObj){
 
 
-        for(var i = 0;i< badGuys.length;i++){
 
 
-         if(badGuys[i].nextPos != null){
-                        midpoints = midpoint(badGuys[i].pos.x,badGuys[i].pos.y,badGuys[i].nextPos.x,badGuys[i].nextPos.y,badGuys[i].stepProg);
+                        midpoints = midpoint(badGuys[i],badGuys[i+1],badGuys[i+2],badGuys[i+3],badGuys[i+4]);
 
                         //console.log("Start poin tis : " + badGuys[i].pos.x + " end point " + badGuys[i].nextPos.x + " calced midpoint " + midpoints[0] + " with per " + badGuys[i].stepProg);
 
-                        xPos = midpoints[0]*gridSize ;
-                        yPos = midpoints[1]*gridSize ;
+                        xPos = midpoints[0]*gridSize;
+                        yPos = midpoints[1]*gridSize;
 
                         //xPos = badGuys[i].pos.x * gridSize + gridSize/4;
                         //yPos = badGuys[i].pos.y * gridSize + gridSize/4;
 
-                    }else{
 
-                        xPos = badGuys[i].pos.x*gridSize ;
-                        yPos = badGuys[i].pos.y*gridSize ;
-
-                    }
 
                     xPos += textures.badGuy.width/4;
                     yPos += textures.badGuy.width/4;
 
 
-       if(badGuys[i].hit != true){
+      // 1 is true 0 is false
+       if(badGuys[i+7] == 0){
             var rect = new PIXI.Sprite(textures.badGuy);
        }else{
             var rect = new PIXI.Sprite(textures.badGuyHit);
@@ -485,7 +489,7 @@ function renderLoop(){
 
  socket.on('tick',function(data){
 
-     badGuys = data.badGuys;
+     badGuys = depressBadGuys(data.badGuys);
      serverFps = data.serverFps;
 
  });

@@ -17,24 +17,28 @@ function include(f) {
   eval.apply(global, [read(f)]);
 }
 
+
 include('./js/misc.js');
+include('./js/compressing.js');
 include('./js/quadTree.js');
 include('./js/spatialHash.js');
 include('./js/gameObjects.js');
 include('./js/gameLogic.js');
 
-var TARGET_TICK_RATE = 30;
+
+var TARGET_TICK_RATE = 1000;
 var TICKRATE = 1000/TARGET_TICK_RATE;
 
 app.use("/gameDat", express.static(__dirname + '/gameDat'));
+
+app.get('/js/compressing.js', function(req, res){
+res.sendFile(__dirname + '/js/compressing.js');
+});
 
 app.get('/', function(req, res){
 res.sendFile(__dirname + '/index2.html');
 });
 
-app.get('/gameDat/tile.png', function(req, res){
-res.sendFile(__dirname + '/gameDat/tile.png');
-});
 
 /*
 app.get('/gameDat/badGuy.png', function(req, res){
@@ -58,9 +62,10 @@ io.on("connection",function(socket){
   socket.on('turret',function(data){
       //Has 3 things, id , x and y pos
 
-       g.toggleTower(data.id,data.x,data.y);
-
-        sendMapData();
+      for(var i = 0;i < data.length;i++){
+        g.toggleTower(data[i].id,data[i].x,data[i].y);
+      }
+      sendMapData();
   });
 
   socket.on('sync',function(data){

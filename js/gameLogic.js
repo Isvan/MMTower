@@ -2,7 +2,8 @@
 
 //2 : 1 ratio between updates and sync request
 //So for every n updates m syncs will be sent out
-var UPDATE_RATIO = 1;
+var UPDATE_RATE = 30;
+var UPDATE_TICKRATE = 1000/UPDATE_RATE;
 
 //The smaller this number the more accurate but slower the spatial hash will be
 var hashSize = 4;
@@ -23,6 +24,7 @@ function Game(){
     this.lastTimeTick = new Date().getTime();
     this.updatesPerSec = 0;
     this.deltaTime = 1;
+    this.lastUpdateTick = 0;
 
 
     //fillMapWithTowers(this,1000,this.mapWidth,this.mapHeight);
@@ -154,17 +156,10 @@ Game.prototype = {
 
         var hash = new SpatialHash(hashSize);
 
-        //This will update everything and send out sync messages
-        if(this.kill){
-          //  clearInterval();
-        }
-
-
-
         //Use this so the server tick rate can be 60/s but data is only sent 30/s or less depending on update ratio
-        if(this.updateTimer == UPDATE_RATIO){
+      if(curTime - this.lastUpdateTick > UPDATE_TICKRATE){
 
-          var before = date.getTime();
+
            badGuysNetwork = [];
            //We dont want to send the entire object, so only grab things in the marked "networkData" object
            for(var i = 0;i < this.badGuys.length;i++){
@@ -173,21 +168,19 @@ Game.prototype = {
 
            }
 
-           io.emit('tick', {badGuys:badGuysNetwork,serverFps:this.updatesPerSec});
+           badGuysCompressed = compressBadGuys(badGuysNetwork);
+
+           io.emit('tick', {badGuys:badGuysCompressed,serverFps:this.updatesPerSec});
+
            this.updateTimer = 0;
-
-
-
 
             if(this.updateMap){
 
                 this.movementMap = genMovementMap(this.mapWidth,this.mapHeight,this.base,this.towers);
                 io.emit("mapUpdate",{towers:this.towers,base:this.base})
                 this.updateMap = false;
-
-
             }
-
+            this.lastUpdateTick = curTime;
         }
 
         this.updateTimer++;
